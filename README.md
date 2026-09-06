@@ -342,3 +342,14 @@ The customer web application runs its assessment in Cloudflare using `web/worker
 The legacy `notebooks/admin/93_PROCESS_CLOUDFLARE_JOBS.ipynb` remains available as a manual/recovery path, but normal customer assessments no longer wait for a notebook worker.
 
 See `docs/CLOUDFLARE_NATIVE.md` for the architecture and `docs/CLOUDFLARE_SETUP.md` for deployment.
+
+## Phase E.1–E.5 — Market Data Layer
+
+Quantvesting now has a thin `MarketDataProvider` boundary and a canonical versioned market snapshot. The current provider is yfinance; the snapshot preserves the existing CSV contracts and can be published to the same Cloudflare/R2 store used by the web UI. See `PHASE_E.md`.
+
+```bash
+python scripts/refresh_market_snapshot.py
+python scripts/publish_market_snapshot.py
+```
+
+The immediate goal is **one market snapshot, two interfaces**. Exact Python-vs-Web numerical parity will be completed after the snapshot reader/execution parity work; E.1–E.5 intentionally stop at the market-data contract and publisher.
