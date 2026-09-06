@@ -307,3 +307,38 @@ The engine returns structured DataFrames/dictionaries and is intended to remain 
 ## Disclaimer
 
 Quantvesting is an analytical and educational framework. Its outputs are based on the data and methodology available at the time of analysis and involve uncertainty and investment risk. No analytical output guarantees future performance or returns. Users remain responsible for their own investment decisions and should obtain appropriately regulated professional advice where required.
+
+## Cloudflare customer web beta
+
+The repository now includes a Cloudflare customer gateway under `web/` while preserving the existing Jupyter/Colab interface and Quantvesting Python engine.
+
+- `web/public/` — customer-facing static Web UI.
+- `web/worker.js` — Cloudflare Worker for upload, job status, R2 persistence and protected admin result publishing.
+- `wrangler.jsonc` — Cloudflare Workers + Static Assets + R2 configuration.
+- `notebooks/admin/93_PROCESS_CLOUDFLARE_JOBS.ipynb` — Colab-side bridge that runs the existing Python engine and publishes the customer-safe result.
+- `docs/CLOUDFLARE_SETUP.md` — first-time Cloudflare deployment and operating instructions.
+- `docs/CLOUDFLARE_COMPATIBILITY.md` — current engine compatibility assessment.
+
+The beta intentionally keeps full Quantvesting analysis in Colab. This avoids coupling the current `yfinance`/`ta`/`pyxirr`-dependent engine to Cloudflare's Pyodide/WebAssembly Python runtime. The customer's experience remains Web-only.
+
+## Two independent execution modes
+
+Quantvesting v3 now deliberately supports two independent paths:
+
+### Jupyter / Python
+
+The notebooks under `notebooks/` remain the full research and analysis interface. They use the Python engine under `src/quantvesting/` and do not depend on the customer web application.
+
+### Cloudflare / Production
+
+The customer web application runs its assessment in Cloudflare using `web/worker.js` and `web/engine/quantvesting.js`. It implements the five customer capabilities without Jupyter/Colab:
+
+1. Onboard My Portfolio
+2. My Portfolio
+3. My Decisions
+4. Quantvesting Opportunities
+5. My Quantvesting Journey
+
+The legacy `notebooks/admin/93_PROCESS_CLOUDFLARE_JOBS.ipynb` remains available as a manual/recovery path, but normal customer assessments no longer wait for a notebook worker.
+
+See `docs/CLOUDFLARE_NATIVE.md` for the architecture and `docs/CLOUDFLARE_SETUP.md` for deployment.
