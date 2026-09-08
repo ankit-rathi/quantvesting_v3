@@ -1,355 +1,89 @@
-# Quantvesting
+# Quantvesting v3
 
 > **From portfolio data to decision intelligence.**
 
-## Introduction
+Quantvesting is a quantitative portfolio/decision-support framework with an independent **Python/Jupyter path** and a **Cloudflare-native Web assessment path**. Both are intended to use the same portfolio, market-snapshot and methodology contracts.
 
-Quantvesting is a **notebook-first investment-analysis and decision-support framework** built around a curated universe of quality Indian businesses, valuation discipline, FTT-based opportunity assessment and portfolio intelligence.
-
-It was originally developed as a personal investing framework and is being productised carefully around a simple principle:
-
-> **Minimum customer input → maximum analytical value.**
-
-Quantvesting is designed to help an investor understand their financial/equity position, identify what deserves attention, evaluate remaining opportunity and improve capital-allocation decisions.
-
-It is deliberately **not** designed to make investment decisions on behalf of the user or to promise returns.
-
----
-
-## What does Quantvesting help answer?
-
-### 1. Portfolio Health
-
-Understand:
-
-- current and deployed value
-- P/L and CAGR/XIRR where available
-- allocation and concentration
-- quality and conviction
-- FTT-based remaining opportunity
-
-### 2. Portfolio Decisions
-
-Use the existing Quantvesting decision layer to identify holdings that deserve review based on the framework's evidence, including FTT, RRR Ind, risk and thesis-capture measures.
-
-### 3. Quantvesting Prospects
-
-Explore the curated universe using the established quality, valuation, growth, momentum, conviction and CumlRnk framework.
-
-### 4. Capital Rotation
-
-Compare positions whose investment thesis is substantially captured with currently available Quantvesting opportunity. The rotation layer is **advisory and review-oriented**, not an automatic sell mechanism.
-
-### 5. Quantvesting Journey
-
-Use persisted EOD history to understand how portfolio value and performance measures have evolved over time.
-
----
-
-## Customer journey
+## Current customer journey
 
 ```text
 00 START HERE
       ↓
 01 ONBOARD MY PORTFOLIO
       ↓
-02 MY PORTFOLIO HEALTH
+02 MY PORTFOLIO
       ↓
-03 MY PORTFOLIO DECISIONS
+03 MY DECISIONS
       ↓
-04 QUANTVESTING PROSPECTS
+04 QUANTVESTING OPPORTUNITIES
       ↓
-05 CAPITAL ROTATION
-      ↓
-06 MY QUANTVESTING JOURNEY
+05 MY QUANTVESTING JOURNEY
 ```
 
-### The first experience
+The Web UI provides the same concepts through **My Portfolio**, **Review Areas**, **Opportunity Universe**, **My Journey**, and **How to Read**. Onboarding is the Web upload flow.
 
-A new customer should be able to start with a simple CSV:
+## Current capabilities
 
-```csv
-Symbol,Shares,AvgCost
-TCS,100,3200
-INFY,150,1450
-HDFCBANK,200,1650
-```
+- Minimum-input portfolio onboarding: `Symbol, Shares, AvgCost`
+- Broker/export aliases such as `Ticker`, `Quantity`, and `Average Price`
+- Portfolio health, allocation and concentration analysis
+- Review areas and advisory capital-rotation review
+- Quantvesting opportunity universe and ranking
+- Longitudinal portfolio journey/EOD history
+- Canonical market snapshots and Python ↔ Web parity fixtures
+- Cloudflare-native background assessment processing
+- Persisted assessment/report links using opaque report tokens
+- Active customer notebooks plus historical notebook archive
 
-The onboarding layer accepts common broker/export labels such as `Ticker`, `Quantity` and `Average Price`. Account information is optional. Investment history can be supplied later to unlock deeper transaction-based performance analysis.
+## Important product positioning
 
----
+Quantvesting is assessment/review oriented. It does not execute trades, manage client funds, guarantee returns, or expose internal action codes as customer-facing trading instructions.
 
-## Quantvesting philosophy
+The standard disclosure is maintained consistently across the active notebooks and Web UI. See the consolidated project document for the canonical wording and customer terminology.
 
-The framework focuses on a small number of durable ideas:
-
-1. **Business quality first** — X/H businesses are carefully selected according to the established framework.
-2. **Buy quality at sensible valuation** — the framework looks for situations where price has room to catch up with business performance.
-3. **FTT as an explicit opportunity reference** — FTT represents the framework's target/technical reference rather than a promise of future price.
-4. **Conviction matters** — the full 12-level conviction priority hierarchy remains part of the framework.
-5. **Capital is finite** — RRR and capital-rotation analysis help identify where existing capital may deserve review.
-6. **Evidence before action** — outputs are designed to make the reasoning visible rather than hide it behind a black-box score.
-
----
-
-## Key Quantvesting concepts
-
-| Concept | Meaning in the framework |
-|---|---|
-| **FTT** | Final target/reference used to estimate remaining opportunity |
-| **NTT** | Near-term target derived from the configured strategy |
-| **LTT** | Longer-term target derived from the configured strategy |
-| **BOL** | Base/reference lower level used in the existing framework |
-| **RRR Ind** | Relationship between profit already captured and remaining FTT opportunity |
-| **Risk Ind** | Portfolio-weighted risk indicator used by the existing framework |
-| **Conviction** | Quality + market-cap bucket classification |
-| **CumlRnk** | Cumulative opportunity ranking within the configured framework |
-
-The exact calculations remain in the engine and configuration rather than in the notebooks.
-
----
-
-## Existing methodology retained
-
-The restructuring and customer-onboarding work do **not** change the established analytical foundation, including:
-
-- X/H/M/L quality classification
-- LC/MC/SC market-cap classification
-- full conviction priority map
-- first-six CORE versus remaining LEGACY treatment for portfolio presentation
-- Value / Growth / Quality / Momentum analysis
-- CumlRnk
-- FTT / NTT / LTT / BOL
-- RRR Ind
-- Risk Ind
-- allocation and concentration analysis
-- prospect analysis
-- capital-rotation review
-- EOD snapshots
-- Phase-B run IDs, portfolio IDs, strategy versions, validation and reproducibility
-
----
-
-## Architecture
-
-```text
-                 QUANTVESTING
-                       │
-          ┌────────────┴────────────┐
-          │                         │
-          ▼                         ▼
-   Shared Market Data        User Portfolio Data
-     market_data/             portfolio_data/<id>/
-          │                         │
-          └────────────┬────────────┘
-                       ▼
-              Quantvesting Engine
-                       │
-        ┌──────────────┼──────────────┐
-        ▼              ▼              ▼
-    Prospects      Portfolio      Decisions
-                       │
-                       ▼
-                Reporting / Dashboard
-                       │
-                       ▼
-                  Jupyter today
-                  API/Web later
-```
-
-The architectural rule is:
-
-> **Notebooks orchestrate. Engine calculates. Repositories persist. Reporting presents.**
-
-The current implementation remains CSV-backed and Jupyter/Colab-friendly. The repository abstraction allows PostgreSQL and API layers to be introduced later without moving investment logic into the UI.
-
----
-
-## Repository structure
+## Repository
 
 ```text
 quantvesting_v3/
+├── README.md
+├── docs/QUANTVESTING.md       # consolidated active project context + roadmap
 ├── config/
-├── market_data/                 # shared Quantvesting data — unchanged
-├── portfolio_data/              # user-specific portfolio data — unchanged
+├── market_data/
+├── portfolio_data/
 ├── portfolio_template/
-├── src/quantvesting/             # analytical engine
-├── notebooks/                   # customer journey
-│   ├── 00_START_HERE.ipynb
-│   ├── 01_ONBOARD_MY_PORTFOLIO.ipynb
-│   ├── 02_MY_PORTFOLIO_HEALTH.ipynb
-│   ├── 03_MY_PORTFOLIO_DECISIONS.ipynb
-│   ├── 04_QUANTVESTING_PROSPECTS.ipynb
-│   ├── 05_CAPITAL_ROTATION.ipynb
-│   ├── 06_MY_QUANTVESTING_JOURNEY.ipynb
-│   ├── admin/
-│   └── archive/
-└── tests/
+├── src/quantvesting/
+├── notebooks/                 # active customer + admin notebooks
+├── scripts/
+├── tests/
+└── web/                       # Cloudflare Worker + Web UI
 ```
 
-The data structure is intentionally **not being reorganised in Phase 0.5/1**. This reduces migration risk while customer onboarding is validated.
+Historical phase/changelog Markdown files have been consolidated into `docs/QUANTVESTING.md`. Historical notebooks remain under `notebooks/archive/` because they are useful reference material.
 
----
+## Persisted report links
 
-## Customer onboarding
-
-### Minimum input
-
-`Symbol`, `Shares`, `AvgCost` are sufficient for the first portfolio assessment.
-
-### Optional inputs
-
-- account label
-- investment/transaction history
-- portfolio amounts / booked P&L
-- historical EOD snapshots
-
-### What happens
+After a Web assessment completes, Quantvesting persists that assessment and provides a stable URL such as:
 
 ```text
-Customer CSV
-     ↓
-Normalize broker/export columns
-     ↓
-Validate holdings
-     ↓
-Create portfolio-specific internal input
-     ↓
-Join against Quantvesting universe
-     ↓
-Portfolio assessment
+/report/<opaque-token>
 ```
 
-Holdings outside the current Quantvesting universe do not block the assessment; they are surfaced as a coverage item while in-universe holdings continue through the normal analysis path.
+The report is independent of the browser session and does not require Jupyter to be running. The link is intentionally treated as private because possession of the complete link grants access to the saved assessment.
 
----
+## WhatsApp roadmap
 
-## Phase status
+WhatsApp is **not implemented in the current release**. It remains deliberately deferred until a suitable WhatsApp provider/API is selected. The future design keeps report persistence independent from WhatsApp and uses separate consent for report delivery and optional Weekend Quantvesting broadcasts.
 
-### Phase A — Operational foundation
+See **`docs/QUANTVESTING.md` → Roadmap → Deferred: WhatsApp**.
 
-**Completed.**
+## Tests
 
-Includes shared/user data separation, XLSX ingestion, repository abstraction, portfolio/run awareness and EOD snapshot persistence.
-
-### Phase B — Traceability & reproducibility
-
-**Completed / operational.**
-
-Includes historical run tracking, strategy versioning, run manifests, data validation, reproducibility support and corrected EOD upsert/date ordering.
-
-### Phase 0.5 — Notebook & product restructuring
-
-**Implemented in this release.**
-
-- customer-journey notebook sequence
-- old notebooks retained under `archive/`
-- admin notebooks separated
-- customer-facing README
-- Start Here notebook
-- longitudinal Journey notebook
-
-### Phase 1 — Customer onboarding
-
-**Implemented and ready for beta feedback.**
-
-- minimum-input portfolio CSV
-- broker/export column aliases
-- optional account field
-- optional investment history
-- runtime portfolio membership
-- outside-universe handling
-- onboarding validation
-- first-assessment flow
-
----
-
-## Product roadmap
-
-```text
-CURRENT
-  ↓
-Phase 0.5  Notebook/Product restructuring       ✅
-  ↓
-Phase 1    Frictionless customer onboarding     ✅ / BETA
-  ↓
-Phase 2    Portfolio health + attention         🔴 NEXT
-  ↓
-Phase 3    Capital efficiency / RRR             🟠
-  ↓
-Phase 4    Prospect & opportunity intelligence   🟠
-  ↓
-Phase 5    Longitudinal customer intelligence    🟡
-  ↓
-Phase 6    Financial health assessment           🟡
-  ↓
-Phase 7    Premium intelligence / journal        🟡
-  ↓
-Phase 8    API + PostgreSQL + web/mobile         🟢 LATER
-```
-
-The priority is deliberately **customer-first**: prove value and reduce onboarding friction before investing heavily in infrastructure.
-
----
-
-## For developers
-
-Run tests from the repository root:
+From the repository root:
 
 ```bash
-PYTHONPATH=src pytest -q
+PYTHONPATH=src python -m pytest -q tests
+npm run check:worker
+npm run test:cloudflare
 ```
 
-The engine returns structured DataFrames/dictionaries and is intended to remain presentation-agnostic.
-
----
-
-## Disclaimer
-
-Quantvesting is an analytical and educational framework. Its outputs are based on the data and methodology available at the time of analysis and involve uncertainty and investment risk. No analytical output guarantees future performance or returns. Users remain responsible for their own investment decisions and should obtain appropriately regulated professional advice where required.
-
-## Cloudflare customer web beta
-
-The repository now includes a Cloudflare customer gateway under `web/` while preserving the existing Jupyter/Colab interface and Quantvesting Python engine.
-
-- `web/public/` — customer-facing static Web UI.
-- `web/worker.js` — Cloudflare Worker for upload, job status, R2 persistence and protected admin result publishing.
-- `wrangler.jsonc` — Cloudflare Workers + Static Assets + R2 configuration.
-- `notebooks/admin/93_PROCESS_CLOUDFLARE_JOBS.ipynb` — Colab-side bridge that runs the existing Python engine and publishes the customer-safe result.
-- `docs/CLOUDFLARE_SETUP.md` — first-time Cloudflare deployment and operating instructions.
-- `docs/CLOUDFLARE_COMPATIBILITY.md` — current engine compatibility assessment.
-
-The beta intentionally keeps full Quantvesting analysis in Colab. This avoids coupling the current `yfinance`/`ta`/`pyxirr`-dependent engine to Cloudflare's Pyodide/WebAssembly Python runtime. The customer's experience remains Web-only.
-
-## Two independent execution modes
-
-Quantvesting v3 now deliberately supports two independent paths:
-
-### Jupyter / Python
-
-The notebooks under `notebooks/` remain the full research and analysis interface. They use the Python engine under `src/quantvesting/` and do not depend on the customer web application.
-
-### Cloudflare / Production
-
-The customer web application runs its assessment in Cloudflare using `web/worker.js` and `web/engine/quantvesting.js`. It implements the five customer capabilities without Jupyter/Colab:
-
-1. Onboard My Portfolio
-2. My Portfolio
-3. My Decisions
-4. Quantvesting Opportunities
-5. My Quantvesting Journey
-
-The legacy `notebooks/admin/93_PROCESS_CLOUDFLARE_JOBS.ipynb` remains available as a manual/recovery path, but normal customer assessments no longer wait for a notebook worker.
-
-See `docs/CLOUDFLARE_NATIVE.md` for the architecture and `docs/CLOUDFLARE_SETUP.md` for deployment.
-
-## Phase E.1–E.5 — Market Data Layer
-
-Quantvesting now has a thin `MarketDataProvider` boundary and a canonical versioned market snapshot. The current provider is yfinance; the snapshot preserves the existing CSV contracts and can be published to the same Cloudflare/R2 store used by the web UI. See `PHASE_E.md`.
-
-```bash
-python scripts/refresh_market_snapshot.py
-python scripts/publish_market_snapshot.py
-```
-
-The immediate goal is **one market snapshot, two interfaces**. Exact Python-vs-Web numerical parity will be completed after the snapshot reader/execution parity work; E.1–E.5 intentionally stop at the market-data contract and publisher.
+Do not claim a change is complete until the relevant regression tests pass.
