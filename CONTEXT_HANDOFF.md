@@ -2,11 +2,19 @@
 
 **Purpose:** This file is the continuation handoff for Quantvesting v3. Keep it in the repository beside `README.md` so a new ChatGPT account/session can continue development without reconstructing project history.
 
-**Last updated:** 2026-09-09
+**Last updated:** 2026-09-10
 
-**Current repository baseline:** `quantvesting_v3_guest_pdf_print_save_guidance_tabs_review_updates_v5.zip`
+**Current repository baseline:** latest v11 Journal funnel-series repository
 
 **Source of truth:** The repository implementation is the source of truth. This document captures the current architecture, decisions, terminology, implemented features, validation status, and roadmap.
+
+### v11 change note — Journal homepage entry removed + My Journey temporarily removed from customer assessment + weekly Journal framework series + prose rewrite
+
+The latest v11 repository removes the dedicated **Journal** tab from the homepage after UX review. The Journal remains a first-party destination at `/blog/` and the contextual **Explore the Quantvesting Journal** CTA remains inside About Quantvesting. The assessment calculation flow is unchanged; the customer-facing Web assessment exposes only My Portfolio, Review Areas and Opportunity Universe, with How to Read as the educational reference.
+
+The Journal contains fifteen Markdown posts in reverse chronological order, with one post dated each Sunday from 31 May 2026 through 6 September 2026. The sequence starts with the Quantvesting introduction, then covers **Quantvesting Features**, **Portfolio Assessment**, the six-stage research funnel (**Macroeconomics → Industry → Business → Financials → Valuation → Technicals**), **Quantvesting Universe**, **Quantvesting Opportunities**, **Rotation Methodology**, the **Review Before You Act** philosophy, and the **Weekend Quantvestor** clarity philosophy. All fifteen posts have now been rewritten as coherent essays in the user's direct Weekend Quantvestor writing style: simple and plain language, short paragraphs, enough elaboration to make the idea useful, minimal fragmentation, and a clear takeaway. The posts are intended to educate readers to a common working understanding rather than teach each topic in depth. Fundamentals/business/financials, valuation and technicals are recurring lenses, while macro and industry are useful contextual lenses to revisit periodically or when conditions change.
+
+No assessment calculation logic, routing, engine methodology, portfolio data contracts, or Journal publishing behavior was changed. The only customer-facing assessment change remains removal of the My Journey tab/content from the Web report and browser print view; the underlying journey data/API and notebooks remain intact. Generated Journal pages and GitHub Pages redirects are regenerated from the current `_posts/` set. The Journal build removes and recreates `web/public/blog/` on every build, so deleting a Markdown post from `_posts/` also removes its generated Worker article, feed entry and sitemap entry on the next Journal build/deploy. The GitHub Pages redirect build likewise removes and recreates `.github-pages/`, so deleted posts no longer receive redirect pages after deployment.
 
 ---
 
@@ -87,9 +95,10 @@ The Web UI exposes the corresponding customer concepts through:
 - My Portfolio
 - Review Areas
 - Opportunity Universe
-- My Journey
 - How to Prepare & Upload (on the upload screen)
 - How to Read (alongside the assessment report)
+
+The underlying notebook journey and Web result/API journey data remain intact, but **My Journey is temporarily removed from the customer-facing Web assessment**. It is not shown as an assessment tab, not rendered in the customer-facing report, and not included in the browser Print / Save Assessment PDF. This is intentional until longitudinal assessment history makes the journey view materially useful.
 
 Onboarding is the Web upload flow.
 
@@ -127,6 +136,9 @@ quantvesting_v3/
 │   ├── admin/
 │   └── archive/
 ├── scripts/
+│   └── build_blog.py
+├── _posts/                    # Quantvesting Journal Markdown source
+├── .github/workflows/         # GitHub Pages deployment
 ├── tests/
 │   ├── parity/
 │   └── cloudflare/
@@ -238,7 +250,7 @@ Do not revert this aggregation behavior.
 
 The current guest Web flow does not create or expose a persistent public report URL. After an assessment completes, the Web UI offers **Print / Save Assessment PDF**.
 
-The assessment report is presented as a print-ready view built from the same Web UI DOM and CSS. It is not stored as a public report artifact. The print view includes all assessment report tabs sequentially — My Portfolio, Review Areas, Opportunity Universe and My Journey — while intentionally excluding the separate How to Prepare & Upload guidance, the interactive How to Read tab and report controls. Browser-native Print / Save as PDF is used so fonts, spacing, tables, cards and customer-facing formatting stay as close as possible to the Web UI.
+The assessment report is presented as a print-ready view built from the same Web UI DOM and CSS. It is not stored as a public report artifact. The print view includes the customer-facing assessment tabs sequentially — My Portfolio, Review Areas and Opportunity Universe — while intentionally excluding the separate How to Prepare & Upload guidance, the interactive How to Read tab and report controls. The underlying journey result/API data remains intact for future longitudinal use. Browser-native Print / Save as PDF is used so fonts, spacing, tables, cards and customer-facing formatting stay as close as possible to the Web UI.
 
 The existing job/result persistence remains necessary for background processing and browser recovery. The protected registered-user assessment workflow remains intact.
 
@@ -324,7 +336,11 @@ Below the homepage tabs
 
 
 
-## 7E. Web UI / responsive UX refinement (September 10, 2026)
+## 7E. Browser-native PDF page gutters (September 10, 2026)
+
+The browser-native Print / Save Assessment PDF now applies explicit page-safe gutters inside the print document rather than relying only on browser `@page` margins. The print-only layout uses `@page{margin:0}` plus `padding:12mm 10mm 14mm` on `.print-document`, ensuring the assessment content and bordered cards/tables have visible left/right/top/bottom breathing room even when Chrome print settings would otherwise collapse page margins. This is isolated to the print view and does not change the latest Web UI look and feel. The intended A4 print geometry and existing page-break structure are preserved. Regression coverage checks the print gutter contract.
+
+## 7F. Web UI / responsive UX refinement (September 10, 2026)
 
 The Web UI received a visual-hierarchy and responsive-design pass based on the principle of **quiet financial intelligence**: reduce visual competition, preserve analytical depth, and progressively reveal detail rather than compressing every desktop component onto small screens. The assessment engine, data contracts, customer terminology, market-snapshot logic, PDF flow and Python ↔ Web parity are unchanged.
 
@@ -376,6 +392,48 @@ npm run test:cloudflare
 
 The new UI regression coverage checks the mobile holding-card contract, responsive breakpoints, reduced visual noise and shared button sizing.
 
+
+## 7G. Quantvesting Journal — current architecture and publishing workflow (September 10, 2026)
+
+A first-party static Journal has been added for education, trust and acquisition without introducing a CMS, database, comments system, customer-account dependency or portfolio-data dependency.
+
+### Customer experience / information architecture
+
+The homepage does **not** have a dedicated Journal tab. The Journal remains a separate `/blog/` destination, with the contextual `Explore the Quantvesting Journal` CTA inside About Quantvesting. The assessment progression is separately numbered: `My Portfolio` → `Review Areas` → `Opportunity Universe`, with `How to Read` as the educational reference. The underlying My Journey methodology/data remains available for future customer-facing longitudinal history, but the current Web assessment does not expose it.
+
+This keeps two user intents distinct:
+
+> **Assessment:** What does the framework see in my portfolio?
+>
+> **Journal:** How does Quantvesting think about investing?
+>
+> **How to Read:** How should I understand these concepts?
+
+The Journal uses reverse-chronological essays, desktop topic navigation, responsive mobile topic controls, accessible topic chips, shareable `?topic=` filtering, clean article pages, RSS and sitemap output. `_posts/` currently contains fifteen posts, dated weekly on Sundays from 31 May 2026 through 6 September 2026. The first/oldest post is the Quantvesting introduction, followed by features, portfolio assessment, the six research-funnel stages, universe, opportunities, rotation, review-before-action, and Weekend Quantvestor philosophy.
+
+### Typography parity
+
+The Journal deliberately reuses the Web UI's existing typography and design system: same font family, base sizing, heading hierarchy, palette, spacing conventions and shared button primitives. `web/blog/blog.css` adds only Journal-specific layout and reading styles. Individual article pages load the shared stylesheet from `../../../styles.css`; using `../../styles.css` would resolve to `/blog/styles.css` and cause browser fallback typography.
+
+### Source and public URLs
+
+- Source: `_posts/YYYY-MM-DD-slug.md`
+- Build: `scripts/build_blog.py`
+- Live Journal: `https://quantvesting-v3.rathi-ankit.workers.dev/blog/`
+- GitHub Pages redirect layer: `https://ankit-rathi.github.io/quantvesting_v3/blog/`
+- Live article pattern: `https://quantvesting-v3.rathi-ankit.workers.dev/blog/posts/<slug>/`
+
+The filename date is authoritative for ordering. Required front matter is `title`, `excerpt`, and `tags`.
+
+### Markdown-only publishing
+
+`_posts/` is the source of truth. When a new post is pushed to `main`, `.github/workflows/deploy-journal-worker.yml` runs `scripts/build_blog.py` and deploys the updated static assets to the Cloudflare Worker. This is automated; the user does not manually redeploy the Web application for each article.
+
+`.github/workflows/deploy-pages.yml` separately builds `.github-pages/`, a small GitHub Pages redirect shell. It creates the project-domain root redirect, `/blog/` redirect and a redirect for each generated post, preserving the path to the corresponding Worker URL. This avoids manual redirect configuration as new posts are added.
+
+One-time repository setup is required: GitHub Pages must use **GitHub Actions** as the publishing source, and repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` must be configured with permission to deploy the `quantvesting-v3` Worker. Never commit secrets. After that, the author workflow is simply **add/edit Markdown → push**.
+
+Do not manually edit generated files under `web/public/blog/` or `.github-pages/`.
 
 ## 8. Market-data architecture
 
@@ -679,7 +737,7 @@ It is retained for compatibility/fallback and still returns an on-demand `applic
 - The protected registered-user assessment path and its saved portfolio/journey behavior remain intact.
 - Print/PDF generation is presentation/delivery only; it does not calculate an independent assessment.
 - Customer-facing print/PDF terminology follows the same labels used by the Web UI and active notebooks.
-- The print view includes all four assessment report tabs sequentially and excludes both customer guidance tabs.
+- The print view includes the three customer-facing assessment report tabs sequentially and excludes both customer guidance tabs. My Journey remains available in the underlying result/API contract but is not customer-facing for now.
 - Technical provenance remains in the assessment result, while the Web UI presents market-data freshness as a human-readable IST date/time.
 
 ### PDF contents
@@ -1015,6 +1073,13 @@ as primary customer-facing labels.
 
 ---
 
+
+## 7H. Journal content refinement record (September 10, 2026)
+
+The Journal content was rewritten as a coherent weekly learning sequence. The publication calendar now runs weekly on Sundays from 31 May 2026 to 6 September 2026 (15 posts). Six dedicated funnel explainers were added: **Macroeconomics**, **Industry**, **Business**, **Financials**, **Valuation**, and **Technicals**. Each is intentionally introductory: the goal is common understanding of what the lens asks, what to look at, and how it fits into Quantvesting—not deep subject-matter training.
+
+The existing posts were also rewritten for consistency with the user's preferred writing method: clear, brief, sharp, direct, question-led, and low on verbosity. The posts use the same core Quantvesting terminology and reinforce the distinction between recurring lenses (fundamentals/business/financials, valuation, technicals) and periodic context (macro and industry).
+
 ## 27. How a new ChatGPT session should continue
 
 When starting from another account/session:
@@ -1067,7 +1132,7 @@ Python/Jupyter engine
 
 Cloudflare Web
         │
-        ├── homepage About Quantvesting tab
+        ├── homepage About Quantvesting tab + contextual Journal CTA
         ├── downloadable sample portfolio CSV
         ├── responsive mobile holding cards
         ├── restrained visual hierarchy / shared button system
@@ -1077,6 +1142,13 @@ Cloudflare Web
         ├── same customer terminology
         ├── same methodology contracts
         └── persisted assessment snapshot
+
+Quantvesting Journal
+        │
+        ├── Markdown source posts in _posts/
+        ├── static Journal index + topic filters
+        ├── clean article URLs + RSS feed
+        └── GitHub Pages deployment workflow
 
 Documentation
         │
