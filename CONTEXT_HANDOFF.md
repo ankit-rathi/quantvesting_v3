@@ -2,9 +2,9 @@
 
 **Purpose:** This file is the continuation handoff for Quantvesting v3. Keep it in the repository beside `README.md` so a new ChatGPT account/session can continue development without reconstructing project history.
 
-**Last updated:** 2026-09-08
+**Last updated:** 2026-09-09
 
-**Current repository baseline:** `quantvesting_v3_E6_SEBI_sync_labels_cleaned_persisted_reports.zip`
+**Current repository baseline:** `quantvesting_v3_guest_pdf_print_save_guidance_tabs_review_updates_v5.zip`
 
 **Source of truth:** The repository implementation is the source of truth. This document captures the current architecture, decisions, terminology, implemented features, validation status, and roadmap.
 
@@ -47,7 +47,7 @@ The current repository contains:
 - Python ↔ Web parity fixtures.
 - Customer-facing terminology synchronization.
 - Centralized compliance/customer-language wording.
-- Persisted Web assessment/report links using opaque report tokens.
+- On-demand Web assessment PDF delivery; guest users are not given persistent public report links.
 - Consolidated project documentation.
 
 ### Deliberately not implemented
@@ -88,9 +88,15 @@ The Web UI exposes the corresponding customer concepts through:
 - Review Areas
 - Opportunity Universe
 - My Journey
-- How to Read
+- How to Prepare & Upload (on the upload screen)
+- How to Read (alongside the assessment report)
 
 Onboarding is the Web upload flow.
+
+The Web UI has two separate customer guidance tabs. **How to Prepare & Upload** appears with the portfolio upload screen and explains the CSV format and upload process. **How to Read** appears alongside the assessment report and explains what each assessment tab contains, what the labels/jargon mean, and how to interpret the report. These are intentionally separate because they answer different customer questions.
+
+Customer-facing Web copy must not expose implementation details such as Jupyter, Cloudflare, raw snapshot IDs, provider names, or ISO timestamps. Market-data freshness is presented as a human-readable date/time in IST.
+
 
 ---
 
@@ -179,7 +185,7 @@ Shared requirements include:
 - Parity fixtures.
 - Assessment provenance concepts.
 
-The Web persisted-report feature is a presentation/delivery feature. It must not become a second independent calculation engine.
+The Web PDF is a presentation/delivery feature. It must not become a second independent calculation engine.
 
 Active notebooks should explain the same customer concepts as the Web UI, but must not become dependent on Web implementation details.
 
@@ -227,6 +233,149 @@ BANDHANBNK  -> 1,340 shares, ₹207.88, DM+SV
 Do not revert this aggregation behavior.
 
 ---
+
+## 7A. Assessment delivery
+
+The current guest Web flow does not create or expose a persistent public report URL. After an assessment completes, the Web UI offers **Print / Save Assessment PDF**.
+
+The assessment report is presented as a print-ready view built from the same Web UI DOM and CSS. It is not stored as a public report artifact. The print view includes all assessment report tabs sequentially — My Portfolio, Review Areas, Opportunity Universe and My Journey — while intentionally excluding the separate How to Prepare & Upload guidance, the interactive How to Read tab and report controls. Browser-native Print / Save as PDF is used so fonts, spacing, tables, cards and customer-facing formatting stay as close as possible to the Web UI.
+
+The existing job/result persistence remains necessary for background processing and browser recovery. The protected registered-user assessment workflow remains intact.
+
+The primary implementation lives in `web/public/app.js` and `web/public/styles.css`, using a hidden print iframe and the existing assessment DOM. The legacy Worker endpoint `web/worker.js` (`/api/jobs/<id>/pdf`) remains available as a compatibility/fallback API surface, but the primary customer button no longer fetches that endpoint. PDF/print presentation is a delivery layer only; it does not calculate an independent assessment.
+
+## 7B. Web UI review-comment updates (September 8, 2026)
+
+The following customer-facing Web UI refinements are now implemented without changing the underlying Quantvesting methodology: 
+
+- **Total holdings:** My Portfolio now shows a `Total Holdings` KPI. The count is the security-level holding count after the existing Symbol aggregation/weighted-average-cost normalization (for example, the known parity fixture remains 118 input rows -> 86 holdings).
+- **Per-holding allocation:** Portfolio holdings show `Allocation`, calculated from each holding's current market value divided by the total current value represented by holdings with available current prices.
+- **Per-holding profit:** Portfolio holdings show `Profit %` immediately before `Upside`. It is the current profit/loss percentage versus the holding's aggregated average-cost basis (`current value - deployed/invested value`, divided by deployed/invested value). Holdings without current market data show N/A.
+- **Holdings sorting:** Every Portfolio Holdings column is sortable in the Web UI. Click a column heading for ascending order; click it again for descending order. This covers Symbol, Accounts, Holding Type, Shares, Avg Cost, Current, Allocation, FTT, Profit %, Upside and Review.
+- **CAGR / XIRR in Web UI:** The customer-facing Web assessment no longer displays the CAGR / XIRR KPI because investment-history details are not part of the current upload flow, so this value would otherwise remain N/A. The underlying engine/data contracts and Python/Jupyter methodology remain intact.
+- **Review Areas ordering:** Portfolio review actions are ordered by `Remaining upside %`, ascending (lowest remaining upside first), with unavailable values placed last and Symbol used as a tie-breaker. The review cards also retain the Remaining upside evidence.
+- **Opportunity Universe filter:** Web opportunity construction now sorts by the existing Quantvesting rank, takes the top 40 ranks, and then keeps only securities with `Upside % > 20`. It no longer truncates to the earlier top-10 display.
+
+These are presentation/filtering changes in the Cloudflare Web assessment path. The existing Python/Jupyter methodology and calculations were not changed. The primary browser Print / Save Assessment PDF uses the Web DOM, so the updated holdings table, review ordering and opportunity universe are reflected in the browser-native print view as well.
+
+## 7C. TopMate beta-service and homepage Opportunity Universe updates (September 9, 2026)
+
+The Web UI now includes the Quantvesting beta user's TopMate profile as an external human-support layer:
+
+- **Homepage Discovery Call:** The upload/home screen includes a secondary `Book a Discovery Call` button linking to `https://topmate.io/weekend_quantvestor`. It is positioned as an optional way to learn how the Quantvesting assessment can help, while `Assess My Portfolio` remains the primary homepage CTA.
+- **Post-assessment Portfolio Deep Dive:** Completed assessments include a `Book an In-depth Portfolio Assessment` button linking to the same TopMate profile. It is positioned after the assessment content as the natural next step for users who want help understanding their findings.
+- These are plain external links; there is no TopMate API integration or dependency in the Quantvesting assessment engine.
+- The browser-native print/save assessment intentionally excludes the post-assessment human-service CTA because it is a Web interaction rather than part of the report artifact.
+
+### Homepage Opportunity Universe
+
+The Opportunity Universe is now also surfaced on the homepage as a **discovery/research feature**, because its contents are not derived from the user's uploaded portfolio. The same Quantvesting opportunity-construction logic is used for both the homepage preview and the assessment report:
+
+```text
+Quantvesting market/universe data
+        ↓
+rank by existing Quantvesting rank
+        ↓
+top 40
+        ↓
+Upside > 20%
+        ↓
+Opportunity Universe
+        ├── homepage preview (first 8)
+        └── full assessment tab
+```
+
+The Web worker exposes a public, read-only `/api/public/opportunities` endpoint for the homepage. It loads the current published market snapshot and calls the canonical `buildOpportunities(data, [])` implementation, so ranking/filtering is not duplicated in browser JavaScript. The endpoint returns opportunity data plus market-data freshness metadata and does not require authentication or portfolio data.
+
+The homepage intentionally shows a **preview** rather than duplicating the full assessment table. It is framed as `Explore the Quantvesting Opportunity Universe`, with the disclosure that it is a rules-based research view and not an investment recommendation.
+
+This creates two homepage discovery paths:
+
+1. **Assess My Portfolio** — understand what Quantvesting says about the user's own portfolio.
+2. **Explore the Quantvesting Opportunity Universe** — understand what Quantvesting is currently finding interesting without uploading a portfolio.
+
+The homepage Discovery Call CTA then provides an optional human path for visitors who want to understand Quantvesting before using it.
+
+
+## 7D. Homepage About tab, unified Web buttons and downloadable sample CSV (September 9, 2026)
+
+The homepage/upload experience was refined without changing the assessment engine or existing assessment behavior:
+
+- **About Quantvesting tab:** The homepage now has an `About Quantvesting` tab alongside `1 · Assess My Portfolio` and `How to Prepare & Upload`. It gives a concise explanation of Quantvesting, what the portfolio assessment evaluates, what users can expect from each assessment section, and the educational/informational positioning.
+- **Consistent Web action buttons:** The `.button` component now has a shared minimum height, alignment, typography, spacing and link treatment so button-style anchors and native buttons use the same visual language before and after assessment. The existing primary/secondary distinction remains intentional.
+- **Downloadable sample portfolio:** `web/public/myPortfolioStocks.csv` is a small, upload-ready example using the canonical `Symbol, Shares, AvgCost, InPortfolio` structure. The `How to Prepare & Upload` tab now includes a `Download sample myPortfolioStocks.csv` button. Users can download it, replace the sample holdings with their own holdings, save it, and upload it directly.
+- The sample remains optional; the Web onboarding still accepts the existing minimum `Symbol, Shares, AvgCost` input and the documented broker/export aliases.
+- The sample is served as a static public asset and does not introduce a new API or data dependency.
+- The homepage Opportunity Universe and TopMate beta CTAs remain intact.
+
+### Homepage tab structure
+
+```text
+Homepage
+  ├── 1 · Assess My Portfolio
+  ├── About Quantvesting
+  └── How to Prepare & Upload
+
+Below the homepage tabs
+  ├── Discovery Call CTA
+  └── Opportunity Universe preview
+```
+
+
+
+
+## 7E. Web UI / responsive UX refinement (September 10, 2026)
+
+The Web UI received a visual-hierarchy and responsive-design pass based on the principle of **quiet financial intelligence**: reduce visual competition, preserve analytical depth, and progressively reveal detail rather than compressing every desktop component onto small screens. The assessment engine, data contracts, customer terminology, market-snapshot logic, PDF flow and Python ↔ Web parity are unchanged.
+
+### Homepage hierarchy
+
+- The homepage keeps `Assess My Portfolio` as the primary action.
+- `About Quantvesting` and `How to Prepare & Upload` remain supporting tabs.
+- The Opportunity Universe remains a discovery feature, but its heading and surrounding treatment are quieter: `Explore the Opportunity Universe`.
+- TopMate remains an optional human-support path and is visually secondary to the product journey.
+- Cards use restrained borders and whitespace rather than heavy shadows; the homepage is intentionally calmer than the assessment view.
+
+### Assessment hierarchy
+
+- Portfolio KPI hierarchy is stronger: Current Value and Deployed Value receive greater visual emphasis.
+- Portfolio Health and concentration remain prominent analytical anchors.
+- Review Areas continues to be framed around `What deserves review?`.
+- Desktop analytical density is preserved; no underlying columns or data are removed from the desktop holdings table.
+
+### Responsive behavior
+
+- Desktop/tablet retain the full sortable holdings table.
+- Narrow mobile layouts replace the 11-column holdings table with compact holding cards showing Symbol, Review status, Current value, Remaining upside, Allocation, Profit, Shares, Avg Cost, FTT and account.
+- Assessment action buttons stack cleanly on narrow screens.
+- Homepage and assessment tabs remain horizontally usable without shrinking text into unreadable controls.
+- Mobile spacing and KPI grids are explicitly adjusted at 700px and 430px breakpoints.
+
+### Button system
+
+The existing `.button` component remains the shared action primitive. v5 reinforces a single control height, typography, focus state and primary/secondary hierarchy across native buttons and external-link CTAs. External human-support actions remain visually secondary.
+
+### Design principles
+
+1. Every major screen should answer one question.
+2. Homepage = calm discovery; assessment = structured analytical density.
+3. Prefer whitespace and hierarchy over additional cards or decoration.
+4. Progressive disclosure is preferred to desktop-table compression on mobile.
+5. Preserve all useful analytical detail while making the first screen easier to scan.
+6. Quantvesting should feel like quiet financial intelligence rather than a trading terminal or generic fintech dashboard.
+
+### Validation
+
+The v5 change must continue to pass:
+
+```bash
+PYTHONPATH=src python -m pytest -q tests
+npm run check:worker
+npm run test:cloudflare
+```
+
+The new UI regression coverage checks the mobile holding-card contract, responsive breakpoints, reduced visual noise and shared button sizing.
+
 
 ## 8. Market-data architecture
 
@@ -398,20 +547,23 @@ Do not imply that allocation size and health are the same measure.
 
 ---
 
-## 13. How to Read layer
+## 13. Separate customer guidance tabs
 
-The Web UI includes a supplemental education layer called **How to Read**.
+The Web UI includes a supplemental education layer called **How to Prepare & Upload** on the upload screen and **How to Read** alongside the assessment report.
 
-It explains:
+**How to Prepare & Upload** appears on the upload screen and explains how to prepare the current portfolio CSV and upload it.
 
-- Review candidate
-- Target reached — review
-- Legacy holding — review
-- Rotation review
-- No current review
-- Core Holdings
-- Legacy Holdings
-- Outside Quantvesting Universe
+**How to Read** appears alongside the completed assessment and explains how to understand the assessment sections, terminology and review labels.
+
+It covers:
+
+- minimum `Symbol, Shares, AvgCost` format
+- accepted broker/export aliases
+- multi-account aggregation at security level
+- Portfolio Health vs allocation
+- Holdings, Review Areas, Opportunity Universe and My Journey
+- Review candidate, Target reached — review, Legacy holding — review, Rotation review and No current review
+- Core Holdings, Legacy Holdings and Outside Quantvesting Universe
 
 The main UI should remain understandable without requiring the user to open this guide.
 
@@ -470,8 +622,7 @@ Important Worker responsibilities include:
 POST /api/guest/assessments
 POST /api/assessments
 GET  /api/jobs/:id
-GET  /api/reports/:token
-GET  /report/:token
+GET  /api/jobs/:id/pdf
 GET  /api/portfolio
 GET  /api/decisions
 GET  /api/opportunities
@@ -482,92 +633,76 @@ Administrative job/market-data APIs remain protected by the admin token.
 
 ---
 
-## 17. Persisted report feature — CURRENTLY IMPLEMENTED
+## 17. Assessment PDF delivery — CURRENTLY IMPLEMENTED
 
-Persisted assessment/report links are now part of the current repository.
+The guest Web flow does not create or expose a persistent public report URL. Once an assessment is complete, the UI provides **Print / Save Assessment PDF**.
 
-### Flow
+### Primary flow
 
 ```text
 Web portfolio upload
         ↓
 Cloudflare assessment processing
         ↓
-Assessment result
+Completed assessment result
         ↓
-Generate cryptographically random 256-bit report token
+Render the existing Web assessment DOM
         ↓
-Persist report snapshot in R2
+Reveal all report tabs sequentially for print
         ↓
-/report/<opaque-token>
+Browser-native Print / Save as PDF
 ```
 
-The implementation currently uses an opaque 64-character hexadecimal token generated from 32 random bytes.
-
-The Worker stores the persisted report under an assessment/report namespace in R2.
-
-The public report API is:
+The primary print implementation is in:
 
 ```text
-GET /api/reports/<token>
+web/public/app.js
+web/public/styles.css
 ```
 
-The browser route is:
+A hidden iframe receives a print-only copy of `#resultView`. The copy removes the interactive tab navigation, report controls, errors and the How to Read tab, then makes all assessment report panels visible in sequence. The separate How to Prepare & Upload guidance is outside `#resultView` and is not part of the assessment PDF. The iframe loads the same `/styles.css` used by the Web UI, with A4 print rules for typography, tables, spacing, page breaks and print colors.
+
+The Worker endpoint remains:
 
 ```text
-GET /report/<token>
+GET /api/jobs/<id>/pdf
 ```
 
-The browser route serves the Web application shell; the Web UI reads the persisted report API and renders the saved assessment.
+It is retained for compatibility/fallback and still returns an on-demand `application/pdf`. The primary Web button does not call this endpoint because the legacy text-only generator cannot reproduce the Web UI presentation closely enough.
 
 ### Important properties
 
-- The persisted report is independent of the browser session.
-- It does not require Jupyter to be running.
-- It does not contain a phone number in the URL.
-- It does not introduce WhatsApp.
-- It does not recalculate the assessment when the report is opened.
-- The saved report represents the assessment produced for that run.
-- The complete report link behaves like a bearer link: possession of the full URL grants access.
-- Therefore the UI explicitly tells users to treat the link as private.
+- No public guest report token is generated for new assessments.
+- No guest `/report/<token>` browser route is exposed by the Worker.
+- No guest `/api/reports/<token>` API is exposed by the Worker.
+- Existing job/result persistence remains intact so background processing and browser recovery continue to work.
+- The protected registered-user assessment path and its saved portfolio/journey behavior remain intact.
+- Print/PDF generation is presentation/delivery only; it does not calculate an independent assessment.
+- Customer-facing print/PDF terminology follows the same labels used by the Web UI and active notebooks.
+- The print view includes all four assessment report tabs sequentially and excludes both customer guidance tabs.
+- Technical provenance remains in the assessment result, while the Web UI presents market-data freshness as a human-readable IST date/time.
 
-### Report contents
+### PDF contents
 
-The persisted result contains the assessment information required by the Web presentation layer, including concepts such as:
+The generated assessment PDF includes:
 
-- portfolio ID
-- run ID
-- engine version
-- strategy version
-- terminal assessment
-- portfolio assessment
-- decisions
-- opportunities
+- portfolio summary
+- market-data update date/time and status
+- allocation and concentration
+- holdings
+- review areas
+- capital-rotation review
+- opportunity universe
 - journey
-- assessment metadata
-- publication timestamp
-- report token and creation timestamp
+- disclosure
 
-### Current Web UI behavior
+## 18. Jupyter ↔ Web synchronization
 
-After a completed Web assessment, the UI shows a **Persisted Report** section with:
+The active notebooks remain independent and continue to run the Python engine directly. They do not depend on the Web PDF implementation.
 
-- stable report link
-- Copy Link action
-- explanation that the report can be revisited later
-- privacy warning to treat the link as private
+The notebooks and Web UI must continue to use the same customer-facing labels, disclosure language, portfolio aggregation rules, FTT semantics and market-snapshot semantics.
 
-### Design rule
-
-Persisted reports are a delivery/presentation capability, not a second calculation engine.
-
----
-
-## 18. Jupyter ↔ persisted report synchronization
-
-The active notebooks have been updated to explain that the Web path can persist completed assessments as report snapshots.
-
-The notebooks do not depend on the persisted-report implementation to execute Python analysis.
+The Web PDF is another presentation/delivery representation of the same assessment result, not a second calculation engine.
 
 Current active notebooks:
 
@@ -580,11 +715,7 @@ notebooks/04_QUANTVESTING_OPPORTUNITIES.ipynb
 notebooks/05_MY_QUANTVESTING_JOURNEY.ipynb
 ```
 
-The notebooks and Web UI must continue to use the same customer-facing labels and disclosure language.
-
 Historical notebooks under `notebooks/archive/` are not part of the current customer workflow.
-
----
 
 ## 19. Assessment provenance/freshness
 
@@ -629,7 +760,7 @@ npm run check:worker
 npm run test:cloudflare
 ```
 
-The current cleaned/persisted-report baseline has been validated with:
+The current guest-PDF-delivery baseline has been validated with:
 
 ```text
 Python tests:       37 passed, 3 warnings
@@ -637,6 +768,7 @@ Worker checks:      PASS
 Cloudflare smoke:   PASS
 Ankit parity:       118 rows → 86 holdings
 Python/Web parity:  PASS
+PDF endpoint contract: PASS
 ```
 
 The three Python warnings are existing non-fatal data-validation warnings.
@@ -715,11 +847,12 @@ Do not delete useful source code, tests, active notebooks, portfolio fixtures or
 
 ### Current next priorities
 
-1. Continue fixed-snapshot Python ↔ Web parity coverage.
-2. Continue assessment provenance/freshness visibility.
-3. Harden market snapshot validation and stale-snapshot handling.
-4. Improve operational deployment/monitoring without changing methodology.
-5. Validate persisted report UX and lifecycle before adding communication channels.
+1. Validate the beta funnel: homepage discovery → free assessment → insight → optional TopMate human session.
+2. Observe what beta users understand, ask for and are willing to pay for before expanding the feature set.
+3. Continue fixed-snapshot Python ↔ Web parity coverage.
+4. Continue assessment provenance/freshness visibility and harden market snapshot validation/stale-snapshot handling.
+5. Improve operational deployment/monitoring without changing methodology.
+6. Keep PDF delivery and Web/notebook presentation synchronized before adding additional communication channels.
 
 ### Deferred: WhatsApp
 
@@ -732,18 +865,18 @@ When it becomes appropriate, preserve this architecture:
 ```text
 Quantvesting assessment
         ↓
-Persisted report + opaque URL
+Assessment artifact generated from result
         ↓
 Optional communication channel
         ↓
 WhatsApp provider/API
 ```
 
-The report must remain the persisted Quantvesting artifact. WhatsApp must remain only a delivery/communication channel.
+The assessment result must remain independently persisted for recovery and registered-user workflows. A future assessment artifact/PDF may be generated from that result, but WhatsApp must remain only a delivery/communication channel.
 
 If/when WhatsApp is implemented, use separate consent concepts for:
 
-1. **Assessment/report delivery** — permission to send the persisted report link to the supplied mobile number.
+1. **Assessment/report delivery** — permission to send the assessment PDF/artifact to the supplied mobile number.
 2. **Weekend Quantvesting broadcast** — separate optional consent for recurring educational/update messages.
 
 Do not combine those consents.
@@ -764,7 +897,7 @@ A future report-delivery journey can be:
 ```text
 Assessment complete
       ↓
-Persist report + opaque URL
+Generate assessment PDF/artifact
       ↓
 Optional "Get your report on WhatsApp"
       ↓
@@ -774,7 +907,7 @@ Explicit report-delivery consent
       ↓
 WhatsApp provider/API
       ↓
-Report link delivered
+Assessment artifact delivered
 ```
 
 Weekend broadcast should be a separate process:
@@ -861,8 +994,8 @@ Do not revert:
 - Canonical market snapshot architecture.
 - Python provider abstraction.
 - Cloudflare-native assessment processing.
-- Persisted report links.
-- Opaque report token design.
+- On-demand assessment PDF delivery.
+- No public guest report-token design.
 - Jupyter independence.
 - Historical notebook archive separation.
 - Existing parity fixtures.
@@ -912,7 +1045,7 @@ A future session can be started with:
 Use README.md and CONTEXT_HANDOFF.md as the continuation context for Quantvesting v3.
 Treat the repository implementation as the source of truth.
 Before changing anything, inspect the relevant current code and run the existing tests.
-Preserve Python/Jupyter ↔ Cloudflare Web parity and the canonical customer-facing terminology/disclosure.
+Preserve Python/Jupyter ↔ Cloudflare Web parity and the canonical customer-facing terminology/disclosure. Keep Web and PDF presentation synchronized with active notebook concepts without exposing notebook/runtime implementation details to Web users.
 Do not implement deferred WhatsApp functionality unless explicitly requested.
 ```
 
@@ -934,12 +1067,16 @@ Python/Jupyter engine
 
 Cloudflare Web
         │
+        ├── homepage About Quantvesting tab
+        ├── downloadable sample portfolio CSV
+        ├── responsive mobile holding cards
+        ├── restrained visual hierarchy / shared button system
+        ├── consistent Web action-button styling
         ├── guest assessment
         ├── background processing
         ├── same customer terminology
         ├── same methodology contracts
-        ├── persisted assessment snapshot
-        └── opaque report URL
+        └── persisted assessment snapshot
 
 Documentation
         │
@@ -960,9 +1097,7 @@ The immediate product focus is **MVP hardening and validation**, not broad platf
 
 > **Shared data contract + shared configuration + shared fixtures + explicit parity tests + shared customer vocabulary + centralized disclosure.**
 
-> **Persist the assessment independently of any delivery channel.**
-
-> **Treat report URLs as private bearer links until a stronger authentication/access-control model is introduced.**
+> **Persist the assessment independently of any delivery channel; generate guest print/PDF artifacts on demand rather than exposing public report URLs.**
 
 > **Keep WhatsApp optional and separate from the core assessment engine.**
 
