@@ -4,6 +4,11 @@
 
 This is the consolidated active project document. Historical phase notes, changelogs and setup notes that previously existed as separate Markdown files have been consolidated here so the repository has one active documentation source in addition to `README.md`.
 
+
+### Web assessment table behavior
+
+The Web Portfolio Holdings table shows the security-level holding count, current allocation percentage and remaining upside. Its column headers are clickable for ascending/descending sorting. Review Areas are ordered by Remaining upside ascending, with unavailable values last. Opportunity Universe is constructed from the top 40 ranked securities and then filtered to `Upside % > 20`.
+
 ## 1. Product purpose
 
 Quantvesting is a quantitative portfolio/decision-support platform with two independent execution modes:
@@ -42,7 +47,8 @@ The Web UI exposes the same customer concepts through:
 - Review Areas
 - Opportunity Universe
 - My Journey
-- How to Read
+- How to Prepare & Upload (on the upload screen)
+- How to Read (alongside the assessment report)
 
 Onboarding is the Web upload flow rather than a separate Web tab.
 
@@ -168,9 +174,9 @@ Periodic snapshots must not be described as tick-level real-time data.
 
 Target and rotation calculations use FTT rather than always using Target.
 
-## 8. Persisted report links — current feature
+## 8. Assessment PDF delivery — current feature
 
-The Web assessment now persists a report snapshot independently of the browser session.
+The guest Web assessment no longer exposes a persistent public report URL. Once an assessment is complete, the user can use **Print / Save Assessment PDF**. The primary flow creates a print-ready copy of the same Web assessment DOM, reveals all report tabs sequentially, and uses the browser's native Print / Save as PDF flow.
 
 Flow:
 
@@ -179,18 +185,20 @@ Portfolio CSV
     ↓
 Assessment
     ↓
-Persisted assessment snapshot
+Completed assessment result
     ↓
-Opaque report token
+Print-ready copy of Web assessment DOM
     ↓
-/report/<token>
+All report tabs shown sequentially
+    ↓
+Browser Print / Save as PDF
 ```
 
-The report is stored in R2 under the assessment/report namespace and is rendered through the same Web assessment presentation layer. The URL does not contain the customer's phone number or other contact identifier.
+The print view uses the same `/styles.css` as the Web UI plus A4-specific print rules for fonts, spacing, tables, cards, page breaks and print colors. The upload guidance and interactive How to Read tab, along with report controls, are excluded from the PDF.
 
-The persisted link is intentionally a bearer-style link: anyone who has the complete link can access that saved assessment. Therefore the UI tells users to treat it as private.
+The legacy Worker endpoint `GET /api/jobs/<id>/pdf` remains available as a compatibility/fallback presentation endpoint, but the primary customer button does not call it because its text-only generator cannot reproduce the Web UI closely enough. The existing job/result persistence required for processing remains intact, as does the protected registered-user assessment path.
 
-This feature does **not** introduce customer email authentication, WhatsApp, or Jupyter as a runtime dependency.
+The PDF keeps customer-facing terminology aligned with the active notebooks and Web assessment. Technical provenance such as snapshot ID, source and engine version remains available in the assessment result for auditability, while the Web UI presents a human-readable market-data date/time in IST.
 
 ## 9. Notebook ↔ Web synchronization
 
@@ -203,7 +211,7 @@ The Python and Web paths must continue to share:
 - disclosure language
 - parity fixtures
 
-The Web persisted report is a delivery/presentation feature, not a second calculation engine.
+The Web PDF is a delivery/presentation feature, not a second calculation engine.
 
 Active notebooks remain independent and continue to run the Python engine directly. The notebooks should explain the same customer concepts and labels as the Web UI rather than reproducing Web-specific implementation details.
 
@@ -247,12 +255,13 @@ The current baseline must remain green before a change is considered complete.
 - canonical market snapshot architecture
 - Python ↔ Web parity fixtures
 - guest beta onboarding
-- persisted assessment/report links
+- on-demand assessment PDF delivery without a public guest report link
 
 ### Next hardening
 
 1. Expand fixed-snapshot Python ↔ Web parity coverage.
 2. Continue assessment provenance and freshness visibility.
+3. Keep PDF/Web presentation synchronized with active notebook concepts and labels.
 3. Harden snapshot validation and stale-snapshot handling.
 4. Improve operational deployment/monitoring without changing methodology.
 
@@ -272,7 +281,7 @@ WhatsApp provider/API
 
 When WhatsApp becomes appropriate, keep these concerns separate:
 
-1. **Assessment/report delivery consent** — permission to send the user's persisted report link through WhatsApp.
+1. **Assessment/report delivery consent** — permission to send the user's assessment PDF/artifact through WhatsApp.
 2. **Optional Weekend Quantvesting broadcast consent** — separate opt-in for recurring educational/update messages.
 
 The future contact/consent model should record at least:
@@ -290,7 +299,7 @@ A future report-delivery flow should be:
 ```text
 Assessment complete
       ↓
-Persist report + opaque URL
+Generate/download assessment artifact
       ↓
 Optional "Get report on WhatsApp"
       ↓
@@ -301,7 +310,7 @@ WhatsApp provider
 
 The Weekend broadcast should be a separate opt-in and a separate scheduled process. Revoked/unsubscribed contacts must be excluded.
 
-Do not make WhatsApp the storage location for reports. The report remains a Quantvesting persisted artifact; WhatsApp is only a delivery/communication channel.
+Do not make WhatsApp the storage location for reports. WhatsApp should remain a delivery/communication channel, while the assessment artifact is generated from the canonical assessment result.
 
 Do not build a WhatsApp chatbot as part of the first implementation.
 
