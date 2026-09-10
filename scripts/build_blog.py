@@ -21,7 +21,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 POSTS_DIR = ROOT / "_posts"
 OUT_DIR = ROOT / "web" / "public" / "blog"
-BASE_URL = "https://ankit-rathi.github.io/quantvesting_v3/blog/"
+BASE_URL = "https://quantvesting-v3.rathi-ankit.workers.dev/blog/"
 
 FILENAME_RE = re.compile(r"^(?P<date>\d{4}-\d{2}-\d{2})-(?P<slug>[A-Za-z0-9][A-Za-z0-9-]*)\.md$")
 FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n?(.*)\Z", re.S)
@@ -248,7 +248,7 @@ def write_feed(posts: list[dict]) -> None:
 
 
 def write_sitemap(posts: list[dict]) -> None:
-    site_base = "https://ankit-rathi.github.io/quantvesting_v3/"
+    site_base = "https://quantvesting-v3.rathi-ankit.workers.dev/"
     urls = [site_base, f"{site_base}blog/"]
     urls.extend(f"{BASE_URL}posts/{quote(post['slug'])}/" for post in posts)
     body = "".join(f"<url><loc>{html.escape(url)}</loc></url>" for url in urls)
