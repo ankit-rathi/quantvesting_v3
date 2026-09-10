@@ -196,8 +196,8 @@ def write_post(post: dict) -> None:
     canonical = f"{BASE_URL}posts/{quote(post['slug'])}/"
     description = post["excerpt"]
     tags = "".join(f'<span class="post-tag">{html.escape(tag_label(tag))}</span>' for tag in post["tags"])
-    html_text = page_head(f"{post['title']} | Quantvesting Journal", description, canonical, "../../styles.css", "article")
-    html_text = html_text.replace('<link rel="stylesheet" href="../../styles.css">', '<link rel="stylesheet" href="../../styles.css">\n<link rel="stylesheet" href="../../blog.css">')
+    html_text = page_head(f"{post['title']} | Quantvesting Journal", description, canonical, "../../../styles.css", "article")
+    html_text = html_text.replace('<link rel="stylesheet" href="../../../styles.css">', '<link rel="stylesheet" href="../../../styles.css">\n<link rel="stylesheet" href="../../blog.css">')
     html_text += f'''<body>
 <main class="journal-shell article-shell">
   <header class="article-topline">
