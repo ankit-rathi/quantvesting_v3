@@ -2,19 +2,11 @@
 
 **Purpose:** This file is the continuation handoff for Quantvesting v3. Keep it in the repository beside `README.md` so a new ChatGPT account/session can continue development without reconstructing project history.
 
-**Last updated:** 2026-09-10
+**Last updated:** 2026-09-11
 
-**Current repository baseline:** latest v11 Journal funnel-series repository
+**Current repository baseline:** Holistic cohesion pass applied to the latest 2026-09-11 Review Areas refinement ZIP. This is now the baseline for further work.
 
 **Source of truth:** The repository implementation is the source of truth. This document captures the current architecture, decisions, terminology, implemented features, validation status, and roadmap.
-
-### v11 change note — Journal homepage entry removed + My Journey temporarily removed from customer assessment + weekly Journal framework series + prose rewrite
-
-The latest v11 repository removes the dedicated **Journal** tab from the homepage after UX review. The Journal remains a first-party destination at `/blog/` and the contextual **Explore the Quantvesting Journal** CTA remains inside About Quantvesting. The assessment calculation flow is unchanged; the customer-facing Web assessment exposes only My Portfolio, Review Areas and Opportunity Universe, with How to Read as the educational reference.
-
-The Journal contains fifteen Markdown posts in reverse chronological order, with one post dated each Sunday from 31 May 2026 through 6 September 2026. The sequence starts with the Quantvesting introduction, then covers **Quantvesting Features**, **Portfolio Assessment**, the six-stage research funnel (**Macroeconomics → Industry → Business → Financials → Valuation → Technicals**), **Quantvesting Universe**, **Quantvesting Opportunities**, **Rotation Methodology**, the **Review Before You Act** philosophy, and the **Weekend Quantvestor** clarity philosophy. All fifteen posts have now been rewritten as coherent essays in the user's direct Weekend Quantvestor writing style: simple and plain language, short paragraphs, enough elaboration to make the idea useful, minimal fragmentation, and a clear takeaway. The posts are intended to educate readers to a common working understanding rather than teach each topic in depth. Fundamentals/business/financials, valuation and technicals are recurring lenses, while macro and industry are useful contextual lenses to revisit periodically or when conditions change.
-
-No assessment calculation logic, routing, engine methodology, portfolio data contracts, or Journal publishing behavior was changed. The only customer-facing assessment change remains removal of the My Journey tab/content from the Web report and browser print view; the underlying journey data/API and notebooks remain intact. Generated Journal pages and GitHub Pages redirects are regenerated from the current `_posts/` set. The Journal build removes and recreates `web/public/blog/` on every build, so deleting a Markdown post from `_posts/` also removes its generated Worker article, feed entry and sitemap entry on the next Journal build/deploy. The GitHub Pages redirect build likewise removes and recreates `.github-pages/`, so deleted posts no longer receive redirect pages after deployment.
 
 ---
 
@@ -89,25 +81,51 @@ The active notebook journey is:
 05 MY QUANTVESTING JOURNEY
 ```
 
-The Web UI exposes the corresponding customer concepts through:
+The customer-facing Web UI exposes:
 
 - Assess My Portfolio
+- About Quantvesting
+- How to Prepare & Upload
 - My Portfolio
 - Review Areas
 - Opportunity Universe
-- How to Prepare & Upload (on the upload screen)
-- How to Read (alongside the assessment report)
+- How to Read
 
-The underlying notebook journey and Web result/API journey data remain intact, but **My Journey is temporarily removed from the customer-facing Web assessment**. It is not shown as an assessment tab, not rendered in the customer-facing report, and not included in the browser Print / Save Assessment PDF. This is intentional until longitudinal assessment history makes the journey view materially useful.
+The Web assessment intentionally does not expose My Journey. The underlying journey data/API and notebook methodology remain intact.
 
-Onboarding is the Web upload flow.
-
-The Web UI has two separate customer guidance tabs. **How to Prepare & Upload** appears with the portfolio upload screen and explains the CSV format and upload process. **How to Read** appears alongside the assessment report and explains what each assessment tab contains, what the labels/jargon mean, and how to interpret the report. These are intentionally separate because they answer different customer questions.
+Onboarding is the Web upload flow. The assessment tabs are presentation layers over the existing engine/data contracts.
 
 Customer-facing Web copy must not expose implementation details such as Jupyter, Cloudflare, raw snapshot IDs, provider names, or ISO timestamps. Market-data freshness is presented as a human-readable date/time in IST.
 
 
 ---
+
+### 3A. Latest Review Areas refinement — 2026-09-11
+
+A screenshot review of the latest customer assessment identified four presentation issues, all fixed without changing the underlying methodology or unrelated features:
+
+1. The customer-facing **REMAINING FTT OPPORTUNITY** card was removed because it duplicated FTT/remaining-upside information already present in the assessment. The existing terminal field remains in the engine for compatibility; it is not rendered as a separate customer-facing section.
+2. **Near Target** previously displayed the count of every eligible holding (for example `86`) even though only three cards were shown. This could imply that the whole portfolio was near target. Near Target is now explicitly the **top three** holdings closest to their valid FTT reference, ordered by lowest remaining upside, and the UI badge reads `Top 3`.
+3. The repeated card-level questions were removed. The group header states the question once: **“Is the remaining upside sufficient to keep this capital here?”** for Near Target and **“Does this business still deserve capital in the current portfolio?”** for Quality / Rank Review. Individual cards now show evidence only.
+4. The malformed literal `Framework target · ${reviewValue(x.ftt)}` was corrected to a real **FTT reference** value.
+
+### 3B. Holistic cohesion pass — 2026-09-11
+
+The next review found several cross-layer mismatches. The repository now addresses them as one cohesion pass rather than as isolated UI tweaks:
+
+1. **Canonical strategy contract:** `config/strategy.yaml` is the strategy source of truth; `scripts/build_strategy_contract.py` generates `web/engine/strategy.js`. Web FTT precedence is now NTT → Target, BTT → Target, other strategies → Max, and no current prospect/framework record → no FTT.
+2. **Thesis progress semantics:** Python and Web do not present negative thesis-capture percentages as meaningful progress. Below-cost positions use `BELOW_COST_BASIS`; missing/invalid inputs use `NOT_MEASURABLE`. Strong review now respects the configured 0.90 threshold.
+3. **Coverage transparency:** terminal output includes current-price and FTT coverage counts/percentages plus valuation/deployed/allocation basis labels.
+4. **Review Areas:** active attention situations are separated from Legacy classification; the Attention Queue no longer counts every Legacy holding as an active situation. Near FTT uses an explicit remaining-upside metric with no generic bar. Quality / Rank Review uses rank/quality evidence with no misleading bar. Group questions appear once; cards show evidence.
+5. **Responsive parity:** mobile holdings now has a sort control backed by the same sort model/direction used by the desktop table.
+6. **Opportunity storytelling:** customer-facing tables use Framework Target terminology and show Already held / Not currently held.
+7. **Print/PDF:** the customer-facing print report remains My Portfolio + Review Areas + Opportunity Universe; the compatibility Worker PDF endpoint now uses Framework Target terminology and coverage information and no longer includes My Journey.
+8. **Journal deployment:** Journal generation is now part of the single Worker deployment lifecycle. `scripts/check_web_cohesion.py` validates all generated article assets, index links and sitemap entries. A post-deploy smoke test checks every Journal article URL.
+9. **Cloudflare asset routing:** `wrangler.jsonc` runs Worker code first only for `/api/*`; static Web/Journal assets can be served asset-first.
+10. **Regression coverage:** Python tests, Cloudflare parity/smoke, semantic edge cases, PDF/UI contracts and Journal/link cohesion checks are all part of the maintained validation surface.
+
+The full review evidence list, notebook methodology, registered-user persistence model, guest processing model, market snapshot architecture and existing customer features remain intact.
+
 
 ## 4. Repository structure
 
@@ -136,9 +154,6 @@ quantvesting_v3/
 │   ├── admin/
 │   └── archive/
 ├── scripts/
-│   └── build_blog.py
-├── _posts/                    # Quantvesting Journal Markdown source
-├── .github/workflows/         # GitHub Pages deployment
 ├── tests/
 │   ├── parity/
 │   └── cloudflare/
@@ -250,190 +265,11 @@ Do not revert this aggregation behavior.
 
 The current guest Web flow does not create or expose a persistent public report URL. After an assessment completes, the Web UI offers **Print / Save Assessment PDF**.
 
-The assessment report is presented as a print-ready view built from the same Web UI DOM and CSS. It is not stored as a public report artifact. The print view includes the customer-facing assessment tabs sequentially — My Portfolio, Review Areas and Opportunity Universe — while intentionally excluding the separate How to Prepare & Upload guidance, the interactive How to Read tab and report controls. The underlying journey result/API data remains intact for future longitudinal use. Browser-native Print / Save as PDF is used so fonts, spacing, tables, cards and customer-facing formatting stay as close as possible to the Web UI.
+The assessment report is presented as a print-ready view built from the same Web UI DOM and CSS. It is not stored as a public report artifact. The print view includes the customer-facing report tabs sequentially — My Portfolio, Review Areas and Opportunity Universe — while intentionally excluding How to Read, guidance/controls and the post-assessment CTA. Browser-native Print / Save as PDF is used so fonts, spacing, tables, cards and customer-facing formatting stay as close as possible to the Web UI.
 
 The existing job/result persistence remains necessary for background processing and browser recovery. The protected registered-user assessment workflow remains intact.
 
 The primary implementation lives in `web/public/app.js` and `web/public/styles.css`, using a hidden print iframe and the existing assessment DOM. The legacy Worker endpoint `web/worker.js` (`/api/jobs/<id>/pdf`) remains available as a compatibility/fallback API surface, but the primary customer button no longer fetches that endpoint. PDF/print presentation is a delivery layer only; it does not calculate an independent assessment.
-
-## 7B. Web UI review-comment updates (September 8, 2026)
-
-The following customer-facing Web UI refinements are now implemented without changing the underlying Quantvesting methodology: 
-
-- **Total holdings:** My Portfolio now shows a `Total Holdings` KPI. The count is the security-level holding count after the existing Symbol aggregation/weighted-average-cost normalization (for example, the known parity fixture remains 118 input rows -> 86 holdings).
-- **Per-holding allocation:** Portfolio holdings show `Allocation`, calculated from each holding's current market value divided by the total current value represented by holdings with available current prices.
-- **Per-holding profit:** Portfolio holdings show `Profit %` immediately before `Upside`. It is the current profit/loss percentage versus the holding's aggregated average-cost basis (`current value - deployed/invested value`, divided by deployed/invested value). Holdings without current market data show N/A.
-- **Holdings sorting:** Every Portfolio Holdings column is sortable in the Web UI. Click a column heading for ascending order; click it again for descending order. This covers Symbol, Accounts, Holding Type, Shares, Avg Cost, Current, Allocation, FTT, Profit %, Upside and Review.
-- **CAGR / XIRR in Web UI:** The customer-facing Web assessment no longer displays the CAGR / XIRR KPI because investment-history details are not part of the current upload flow, so this value would otherwise remain N/A. The underlying engine/data contracts and Python/Jupyter methodology remain intact.
-- **Review Areas ordering:** Portfolio review actions are ordered by `Remaining upside %`, ascending (lowest remaining upside first), with unavailable values placed last and Symbol used as a tie-breaker. The review cards also retain the Remaining upside evidence.
-- **Opportunity Universe filter:** Web opportunity construction now sorts by the existing Quantvesting rank, takes the top 40 ranks, and then keeps only securities with `Upside % > 20`. It no longer truncates to the earlier top-10 display.
-
-These are presentation/filtering changes in the Cloudflare Web assessment path. The existing Python/Jupyter methodology and calculations were not changed. The primary browser Print / Save Assessment PDF uses the Web DOM, so the updated holdings table, review ordering and opportunity universe are reflected in the browser-native print view as well.
-
-## 7C. TopMate beta-service and homepage Opportunity Universe updates (September 9, 2026)
-
-The Web UI now includes the Quantvesting beta user's TopMate profile as an external human-support layer:
-
-- **Homepage Discovery Call:** The upload/home screen includes a secondary `Book a Discovery Call` button linking to `https://topmate.io/weekend_quantvestor`. It is positioned as an optional way to learn how the Quantvesting assessment can help, while `Assess My Portfolio` remains the primary homepage CTA.
-- **Post-assessment Portfolio Deep Dive:** Completed assessments include a `Book an In-depth Portfolio Assessment` button linking to the same TopMate profile. It is positioned after the assessment content as the natural next step for users who want help understanding their findings.
-- These are plain external links; there is no TopMate API integration or dependency in the Quantvesting assessment engine.
-- The browser-native print/save assessment intentionally excludes the post-assessment human-service CTA because it is a Web interaction rather than part of the report artifact.
-
-### Homepage Opportunity Universe
-
-The Opportunity Universe is now also surfaced on the homepage as a **discovery/research feature**, because its contents are not derived from the user's uploaded portfolio. The same Quantvesting opportunity-construction logic is used for both the homepage preview and the assessment report:
-
-```text
-Quantvesting market/universe data
-        ↓
-rank by existing Quantvesting rank
-        ↓
-top 40
-        ↓
-Upside > 20%
-        ↓
-Opportunity Universe
-        ├── homepage preview (first 8)
-        └── full assessment tab
-```
-
-The Web worker exposes a public, read-only `/api/public/opportunities` endpoint for the homepage. It loads the current published market snapshot and calls the canonical `buildOpportunities(data, [])` implementation, so ranking/filtering is not duplicated in browser JavaScript. The endpoint returns opportunity data plus market-data freshness metadata and does not require authentication or portfolio data.
-
-The homepage intentionally shows a **preview** rather than duplicating the full assessment table. It is framed as `Explore the Quantvesting Opportunity Universe`, with the disclosure that it is a rules-based research view and not an investment recommendation.
-
-This creates two homepage discovery paths:
-
-1. **Assess My Portfolio** — understand what Quantvesting says about the user's own portfolio.
-2. **Explore the Quantvesting Opportunity Universe** — understand what Quantvesting is currently finding interesting without uploading a portfolio.
-
-The homepage Discovery Call CTA then provides an optional human path for visitors who want to understand Quantvesting before using it.
-
-
-## 7D. Homepage About tab, unified Web buttons and downloadable sample CSV (September 9, 2026)
-
-The homepage/upload experience was refined without changing the assessment engine or existing assessment behavior:
-
-- **About Quantvesting tab:** The homepage now has an `About Quantvesting` tab alongside `1 · Assess My Portfolio` and `How to Prepare & Upload`. It gives a concise explanation of Quantvesting, what the portfolio assessment evaluates, what users can expect from each assessment section, and the educational/informational positioning.
-- **Consistent Web action buttons:** The `.button` component now has a shared minimum height, alignment, typography, spacing and link treatment so button-style anchors and native buttons use the same visual language before and after assessment. The existing primary/secondary distinction remains intentional.
-- **Downloadable sample portfolio:** `web/public/myPortfolioStocks.csv` is a small, upload-ready example using the canonical `Symbol, Shares, AvgCost, InPortfolio` structure. The `How to Prepare & Upload` tab now includes a `Download sample myPortfolioStocks.csv` button. Users can download it, replace the sample holdings with their own holdings, save it, and upload it directly.
-- The sample remains optional; the Web onboarding still accepts the existing minimum `Symbol, Shares, AvgCost` input and the documented broker/export aliases.
-- The sample is served as a static public asset and does not introduce a new API or data dependency.
-- The homepage Opportunity Universe and TopMate beta CTAs remain intact.
-
-### Homepage tab structure
-
-```text
-Homepage
-  ├── 1 · Assess My Portfolio
-  ├── About Quantvesting
-  └── How to Prepare & Upload
-
-Below the homepage tabs
-  ├── Discovery Call CTA
-  └── Opportunity Universe preview
-```
-
-
-
-
-## 7E. Browser-native PDF page gutters (September 10, 2026)
-
-The browser-native Print / Save Assessment PDF now applies explicit page-safe gutters inside the print document rather than relying only on browser `@page` margins. The print-only layout uses `@page{margin:0}` plus `padding:12mm 10mm 14mm` on `.print-document`, ensuring the assessment content and bordered cards/tables have visible left/right/top/bottom breathing room even when Chrome print settings would otherwise collapse page margins. This is isolated to the print view and does not change the latest Web UI look and feel. The intended A4 print geometry and existing page-break structure are preserved. Regression coverage checks the print gutter contract.
-
-## 7F. Web UI / responsive UX refinement (September 10, 2026)
-
-The Web UI received a visual-hierarchy and responsive-design pass based on the principle of **quiet financial intelligence**: reduce visual competition, preserve analytical depth, and progressively reveal detail rather than compressing every desktop component onto small screens. The assessment engine, data contracts, customer terminology, market-snapshot logic, PDF flow and Python ↔ Web parity are unchanged.
-
-### Homepage hierarchy
-
-- The homepage keeps `Assess My Portfolio` as the primary action.
-- `About Quantvesting` and `How to Prepare & Upload` remain supporting tabs.
-- The Opportunity Universe remains a discovery feature, but its heading and surrounding treatment are quieter: `Explore the Opportunity Universe`.
-- TopMate remains an optional human-support path and is visually secondary to the product journey.
-- Cards use restrained borders and whitespace rather than heavy shadows; the homepage is intentionally calmer than the assessment view.
-
-### Assessment hierarchy
-
-- Portfolio KPI hierarchy is stronger: Current Value and Deployed Value receive greater visual emphasis.
-- Portfolio Health and concentration remain prominent analytical anchors.
-- Review Areas continues to be framed around `What deserves review?`.
-- Desktop analytical density is preserved; no underlying columns or data are removed from the desktop holdings table.
-
-### Responsive behavior
-
-- Desktop/tablet retain the full sortable holdings table.
-- Narrow mobile layouts replace the 11-column holdings table with compact holding cards showing Symbol, Review status, Current value, Remaining upside, Allocation, Profit, Shares, Avg Cost, FTT and account.
-- Assessment action buttons stack cleanly on narrow screens.
-- Homepage and assessment tabs remain horizontally usable without shrinking text into unreadable controls.
-- Mobile spacing and KPI grids are explicitly adjusted at 700px and 430px breakpoints.
-
-### Button system
-
-The existing `.button` component remains the shared action primitive. v5 reinforces a single control height, typography, focus state and primary/secondary hierarchy across native buttons and external-link CTAs. External human-support actions remain visually secondary.
-
-### Design principles
-
-1. Every major screen should answer one question.
-2. Homepage = calm discovery; assessment = structured analytical density.
-3. Prefer whitespace and hierarchy over additional cards or decoration.
-4. Progressive disclosure is preferred to desktop-table compression on mobile.
-5. Preserve all useful analytical detail while making the first screen easier to scan.
-6. Quantvesting should feel like quiet financial intelligence rather than a trading terminal or generic fintech dashboard.
-
-### Validation
-
-The v5 change must continue to pass:
-
-```bash
-PYTHONPATH=src python -m pytest -q tests
-npm run check:worker
-npm run test:cloudflare
-```
-
-The new UI regression coverage checks the mobile holding-card contract, responsive breakpoints, reduced visual noise and shared button sizing.
-
-
-## 7G. Quantvesting Journal — current architecture and publishing workflow (September 10, 2026)
-
-A first-party static Journal has been added for education, trust and acquisition without introducing a CMS, database, comments system, customer-account dependency or portfolio-data dependency.
-
-### Customer experience / information architecture
-
-The homepage does **not** have a dedicated Journal tab. The Journal remains a separate `/blog/` destination, with the contextual `Explore the Quantvesting Journal` CTA inside About Quantvesting. The assessment progression is separately numbered: `My Portfolio` → `Review Areas` → `Opportunity Universe`, with `How to Read` as the educational reference. The underlying My Journey methodology/data remains available for future customer-facing longitudinal history, but the current Web assessment does not expose it.
-
-This keeps two user intents distinct:
-
-> **Assessment:** What does the framework see in my portfolio?
->
-> **Journal:** How does Quantvesting think about investing?
->
-> **How to Read:** How should I understand these concepts?
-
-The Journal uses reverse-chronological essays, desktop topic navigation, responsive mobile topic controls, accessible topic chips, shareable `?topic=` filtering, clean article pages, RSS and sitemap output. `_posts/` currently contains fifteen posts, dated weekly on Sundays from 31 May 2026 through 6 September 2026. The first/oldest post is the Quantvesting introduction, followed by features, portfolio assessment, the six research-funnel stages, universe, opportunities, rotation, review-before-action, and Weekend Quantvestor philosophy.
-
-### Typography parity
-
-The Journal deliberately reuses the Web UI's existing typography and design system: same font family, base sizing, heading hierarchy, palette, spacing conventions and shared button primitives. `web/blog/blog.css` adds only Journal-specific layout and reading styles. Individual article pages load the shared stylesheet from `../../../styles.css`; using `../../styles.css` would resolve to `/blog/styles.css` and cause browser fallback typography.
-
-### Source and public URLs
-
-- Source: `_posts/YYYY-MM-DD-slug.md`
-- Build: `scripts/build_blog.py`
-- Live Journal: `https://quantvesting-v3.rathi-ankit.workers.dev/blog/`
-- GitHub Pages redirect layer: `https://ankit-rathi.github.io/quantvesting_v3/blog/`
-- Live article pattern: `https://quantvesting-v3.rathi-ankit.workers.dev/blog/posts/<slug>/`
-
-The filename date is authoritative for ordering. Required front matter is `title`, `excerpt`, and `tags`.
-
-### Markdown-only publishing
-
-`_posts/` is the source of truth. When a new post is pushed to `main`, `.github/workflows/deploy-journal-worker.yml` runs `scripts/build_blog.py` and deploys the updated static assets to the Cloudflare Worker. This is automated; the user does not manually redeploy the Web application for each article.
-
-`.github/workflows/deploy-pages.yml` separately builds `.github-pages/`, a small GitHub Pages redirect shell. It creates the project-domain root redirect, `/blog/` redirect and a redirect for each generated post, preserving the path to the corresponding Worker URL. This avoids manual redirect configuration as new posts are added.
-
-One-time repository setup is required: GitHub Pages must use **GitHub Actions** as the publishing source, and repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` must be configured with permission to deploy the `quantvesting-v3` Worker. Never commit secrets. After that, the author workflow is simply **add/edit Markdown → push**.
-
-Do not manually edit generated files under `web/public/blog/` or `.github-pages/`.
 
 ## 8. Market-data architecture
 
@@ -605,22 +441,19 @@ Do not imply that allocation size and health are the same measure.
 
 ---
 
-## 13. Separate customer guidance tabs
+## 13. How to Read layer
 
-The Web UI includes a supplemental education layer called **How to Prepare & Upload** on the upload screen and **How to Read** alongside the assessment report.
+The Web assessment includes a supplemental education layer called **How to Read**.
 
-**How to Prepare & Upload** appears on the upload screen and explains how to prepare the current portfolio CSV and upload it.
-
-**How to Read** appears alongside the completed assessment and explains how to understand the assessment sections, terminology and review labels.
+It explains how to understand the assessment sections, the two Review Areas groups, the three frequently used analytical lenses, and the customer-facing review labels. Portfolio-upload preparation remains a separate homepage tab, **How to Prepare & Upload**.
 
 It covers:
 
-- minimum `Symbol, Shares, AvgCost` format
-- accepted broker/export aliases
-- multi-account aggregation at security level
+- My Portfolio, Review Areas and Opportunity Universe
+- Near Target and Quality / Rank Review
+- Fundamentals, Valuation and Technicals as the frequently used lenses
 - Portfolio Health vs allocation
-- Holdings, Review Areas, Opportunity Universe and My Journey
-- Review candidate, Target reached — review, Legacy holding — review, Rotation review and No current review
+- Review candidate, Target reached — review, Legacy holding — review, Rotation review, Strong rotation review and No current review
 - Core Holdings, Legacy Holdings and Outside Quantvesting Universe
 
 The main UI should remain understandable without requiring the user to open this guide.
@@ -718,7 +551,7 @@ web/public/app.js
 web/public/styles.css
 ```
 
-A hidden iframe receives a print-only copy of `#resultView`. The copy removes the interactive tab navigation, report controls, errors and the How to Read tab, then makes all assessment report panels visible in sequence. The separate How to Prepare & Upload guidance is outside `#resultView` and is not part of the assessment PDF. The iframe loads the same `/styles.css` used by the Web UI, with A4 print rules for typography, tables, spacing, page breaks and print colors.
+A hidden iframe receives a print-only copy of `#resultView`. The copy removes the interactive tab navigation, report controls, errors, CTA and the How to Read tab, then makes the customer-facing assessment report panels visible in sequence. The iframe loads the same `/styles.css` used by the Web UI, with A4 print rules for typography, tables, spacing, page breaks and print colors.
 
 The Worker endpoint remains:
 
@@ -737,7 +570,7 @@ It is retained for compatibility/fallback and still returns an on-demand `applic
 - The protected registered-user assessment path and its saved portfolio/journey behavior remain intact.
 - Print/PDF generation is presentation/delivery only; it does not calculate an independent assessment.
 - Customer-facing print/PDF terminology follows the same labels used by the Web UI and active notebooks.
-- The print view includes the three customer-facing assessment report tabs sequentially and excludes both customer guidance tabs. My Journey remains available in the underlying result/API contract but is not customer-facing for now.
+- The print view includes My Portfolio, Review Areas and Opportunity Universe sequentially and excludes How to Read, controls/guidance and the CTA.
 - Technical provenance remains in the assessment result, while the Web UI presents market-data freshness as a human-readable IST date/time.
 
 ### PDF contents
@@ -746,13 +579,15 @@ The generated assessment PDF includes:
 
 - portfolio summary
 - market-data update date/time and status
+- current-value and FTT coverage
 - allocation and concentration
 - holdings
 - review areas
 - capital-rotation review
 - opportunity universe
-- journey
 - disclosure
+
+It intentionally excludes My Journey, How to Read, controls/guidance and the post-assessment CTA.
 
 ## 18. Jupyter ↔ Web synchronization
 
@@ -905,12 +740,11 @@ Do not delete useful source code, tests, active notebooks, portfolio fixtures or
 
 ### Current next priorities
 
-1. Validate the beta funnel: homepage discovery → free assessment → insight → optional TopMate human session.
-2. Observe what beta users understand, ask for and are willing to pay for before expanding the feature set.
-3. Continue fixed-snapshot Python ↔ Web parity coverage.
-4. Continue assessment provenance/freshness visibility and harden market snapshot validation/stale-snapshot handling.
-5. Improve operational deployment/monitoring without changing methodology.
-6. Keep PDF delivery and Web/notebook presentation synchronized before adding additional communication channels.
+1. Continue fixed-snapshot Python ↔ Web parity coverage.
+2. Continue assessment provenance/freshness visibility.
+3. Harden market snapshot validation and stale-snapshot handling.
+4. Improve operational deployment/monitoring without changing methodology.
+5. Keep PDF delivery and Web/notebook presentation synchronized before adding communication channels.
 
 ### Deferred: WhatsApp
 
@@ -1073,13 +907,6 @@ as primary customer-facing labels.
 
 ---
 
-
-## 7H. Journal content refinement record (September 10, 2026)
-
-The Journal content was rewritten as a coherent weekly learning sequence. The publication calendar now runs weekly on Sundays from 31 May 2026 to 6 September 2026 (15 posts). Six dedicated funnel explainers were added: **Macroeconomics**, **Industry**, **Business**, **Financials**, **Valuation**, and **Technicals**. Each is intentionally introductory: the goal is common understanding of what the lens asks, what to look at, and how it fits into Quantvesting—not deep subject-matter training.
-
-The existing posts were also rewritten for consistency with the user's preferred writing method: clear, brief, sharp, direct, question-led, and low on verbosity. The posts use the same core Quantvesting terminology and reinforce the distinction between recurring lenses (fundamentals/business/financials, valuation, technicals) and periodic context (macro and industry).
-
 ## 27. How a new ChatGPT session should continue
 
 When starting from another account/session:
@@ -1132,23 +959,11 @@ Python/Jupyter engine
 
 Cloudflare Web
         │
-        ├── homepage About Quantvesting tab + contextual Journal CTA
-        ├── downloadable sample portfolio CSV
-        ├── responsive mobile holding cards
-        ├── restrained visual hierarchy / shared button system
-        ├── consistent Web action-button styling
         ├── guest assessment
         ├── background processing
         ├── same customer terminology
         ├── same methodology contracts
         └── persisted assessment snapshot
-
-Quantvesting Journal
-        │
-        ├── Markdown source posts in _posts/
-        ├── static Journal index + topic filters
-        ├── clean article URLs + RSS feed
-        └── GitHub Pages deployment workflow
 
 Documentation
         │
