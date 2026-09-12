@@ -4,7 +4,7 @@
 
 **Last updated:** 2026-09-11
 
-**Current repository baseline:** Holistic cohesion pass applied to the latest 2026-09-11 Review Areas refinement ZIP. This is now the baseline for further work.
+**Current repository baseline:** Visual storytelling pass applied to the latest 2026-09-11 holistic cohesion ZIP. This is now the baseline for further work.
 
 **Source of truth:** The repository implementation is the source of truth. This document captures the current architecture, decisions, terminology, implemented features, validation status, and roadmap.
 
@@ -108,6 +108,24 @@ A screenshot review of the latest customer assessment identified four presentati
 2. **Near Target** previously displayed the count of every eligible holding (for example `86`) even though only three cards were shown. This could imply that the whole portfolio was near target. Near Target is now explicitly the **top three** holdings closest to their valid FTT reference, ordered by lowest remaining upside, and the UI badge reads `Top 3`.
 3. The repeated card-level questions were removed. The group header states the question once: **“Is the remaining upside sufficient to keep this capital here?”** for Near Target and **“Does this business still deserve capital in the current portfolio?”** for Quality / Rank Review. Individual cards now show evidence only.
 4. The malformed literal `Framework target · ${reviewValue(x.ftt)}` was corrected to a real **FTT reference** value.
+
+
+### 3C. Visual storytelling pass — 2026-09-11
+
+The latest pass preserves the existing product architecture and analytical contracts while improving the visual narrative. The guiding sequence is now **See the shape of capital → Understand what deserves attention → Know where to research next**, with a reusable storytelling grammar of **Finding → Meaning → Evidence → Question → Context**.
+
+Customer-facing changes:
+- Homepage hero promise now reads: **See what you own. Understand what deserves attention. Know where to research next.**
+- Assessment At a Glance now includes a **Start Here** block with up to three prioritised situations from the Attention Queue. Each card shows the situation reason and capital at stake and links into Review Areas.
+- Portfolio KPI now says **Portfolio Value*** and the snapshot note explains that the figure is the currently valued Quantvesting-covered portion when coverage is incomplete.
+- Allocation visual now leads with a stacked **Core / Legacy / Outside universe** capital-alignment bar and explicit legend.
+- Review Areas cards now show **Capital at stake** as evidence.
+- Review Areas can show an **Attention Map** when at least two surfaced situations have usable current value and remaining FTT upside. It is a visual prioritisation aid, not a decision rule.
+- Homepage Opportunity Universe preview now uses three research cards, with rank, conviction/category, portfolio status and framework upside; the underlying shortlist table is progressively disclosed.
+- Opportunity Universe explanation now explicitly frames the output as a **research shortlist** that reduces search cost rather than making the investment decision.
+- Mobile and print inherit the same storytelling blocks from the existing DOM/CSS path.
+
+Deliberately not added: portfolio score, trading-terminal charts, buy/sell recommendations, excessive metrics, or new customer-facing tabs.
 
 ### 3B. Holistic cohesion pass — 2026-09-11
 

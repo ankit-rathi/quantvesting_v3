@@ -7,20 +7,18 @@ Quantvesting is a quantitative portfolio/decision-support framework with an inde
 ## Current customer journey
 
 ```text
-00 START HERE
-      ↓
-01 ONBOARD MY PORTFOLIO
-      ↓
-02 MY PORTFOLIO
-      ↓
-03 MY DECISIONS
-      ↓
-04 QUANTVESTING OPPORTUNITIES
-      ↓
-05 MY QUANTVESTING JOURNEY
+ASSESS
+  ↓
+SEE THE SHAPE OF YOUR CAPITAL
+  ↓
+UNDERSTAND WHAT DESERVES ATTENTION
+  ↓
+KNOW WHERE TO RESEARCH NEXT
 ```
 
 The customer-facing Web UI exposes **Assess My Portfolio**, **About Quantvesting**, **How to Prepare & Upload**, then **My Portfolio**, **Review Areas**, **Opportunity Universe**, and **How to Read**. My Journey remains an underlying Python/Web data capability but is intentionally not exposed in the first customer assessment.
+
+The visual storytelling contract is **Finding → Meaning → Evidence → Question → Context**. The design intentionally prioritises clarity over dashboard density.
 
 ## Current capabilities
 
