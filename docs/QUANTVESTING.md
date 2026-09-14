@@ -7,7 +7,7 @@ This is the consolidated active project document. Historical phase notes, change
 
 ### Web assessment table behavior
 
-The Web Portfolio Holdings table shows the security-level holding count, current allocation percentage and remaining upside. Its column headers are clickable for ascending/descending sorting. Review Areas are ordered by Remaining upside ascending, with unavailable values last. Opportunity Universe is constructed from the top 40 ranked securities and then filtered to `Upside % > 20`.
+The Web Portfolio Holdings table shows security-level holdings, current allocation percentage and remaining FTT upside. Its column headers are clickable for ascending/descending sorting, and mobile uses the same sort model. Review Areas are not forced into one ordering: Near FTT is ordered by remaining upside within its configured cutoff, Conviction / Rank Review is ordered by current framework rank, and capital-rotation review is governed by the existing thesis-capture thresholds. Opportunity Universe is constructed from the top 40 ranked securities and then filtered to `Upside % > 20`.
 
 ## 1. Product purpose
 
@@ -208,18 +208,24 @@ The PDF keeps customer-facing terminology aligned with the active notebooks and 
 
 ## 9. Notebook ↔ Web synchronization
 
+The active Jupyter notebooks are the methodology/workflow reference for customer-facing review concepts. The Python engine remains the calculation implementation they orchestrate; the Cloudflare Web engine mirrors the same contracts rather than inventing a second methodology.
+
 The Python and Web paths must continue to share:
 
 - customer-facing terminology
+- Conviction taxonomy and Core/Legacy classification
+- Review Area thresholds and eligibility logic
 - methodology and FTT semantics
 - portfolio aggregation rules
 - market snapshot semantics
 - disclosure language
 - parity fixtures
 
+For Review Areas specifically, the notebook path uses `qv.review_areas()` and the Web path mirrors the resulting rules from the generated strategy contract. The active notebook keeps the full candidate sets available for debugging; Web may limit the visible spotlight to the top three without changing the underlying candidate set.
+
 The Web PDF is a delivery/presentation feature, not a second calculation engine.
 
-Active notebooks remain independent and continue to run the Python engine directly. The notebooks should explain the same customer concepts and labels as the Web UI rather than reproducing Web-specific implementation details.
+Active notebooks remain independently runnable and continue to use the Python engine directly. They should explain the same customer concepts and labels as the Web UI without exposing Web-specific implementation details.
 
 ## 9A. Quantvesting Journal — current implementation
 
@@ -275,6 +281,22 @@ Set **Repository → Settings → Pages → Build and deployment → Source** to
 - `CLOUDFLARE_ACCOUNT_ID` — the Cloudflare account ID that owns the Worker.
 
 Do not commit either secret.
+
+
+### 9C. Visual storytelling pass — 2026-09-11
+
+The next visual refinement keeps the existing quiet-financial-intelligence aesthetic but makes the customer journey more narrative: **see the shape of capital → understand what deserves attention → know where to research next**. The design contract is now **Finding → Meaning → Evidence → Question → Context**.
+
+1. **Portfolio opening story:** the assessment headline now states the product promise directly: “See what you own. Understand what deserves attention. Know where to research next.” The At a Glance section now surfaces a **Start Here** set of up to three prioritised situations rather than asking the customer to discover the story unaided.
+2. **Portfolio-value transparency:** the primary KPI is labelled **Portfolio Value*** and the snapshot note explicitly explains that it represents the currently valued Quantvesting-covered portion when coverage is incomplete.
+3. **Capital alignment visual:** the allocation visual now leads with Core / Legacy / Outside-universe capital alignment rather than relying on a donut to carry the story. The existing donut CSS remains only as legacy styling compatibility; the rendered customer visual uses the stacked alignment bar and explicit legend.
+4. **Review Areas:** review cards now show **Capital at stake** alongside the reason the situation surfaced. The Attention Queue remains the prioritisation layer, while the grouped evidence remains the inspection layer.
+5. **Attention Map:** when enough review situations have usable current value and remaining FTT upside, Review Areas now includes a restrained two-dimensional visual showing where capital and remaining upside meet. It is explicitly described as a prioritisation aid, not a decision rule.
+6. **Opportunity Universe:** the path remains Universe → Top 40 → Research shortlist, but the UI now explicitly calls the result a research shortlist and explains that it reduces search cost rather than making the decision.
+7. **Homepage discovery:** the public Opportunity Universe preview now leads with three calm research cards (rank, conviction/category, already-held status and framework upside), with the underlying table available as progressive disclosure.
+8. **Mobile:** the new storytelling blocks collapse naturally to one-question-at-a-time cards; the existing shared holdings sort model remains intact.
+9. **Print:** the same customer-facing DOM/CSS remains the source of the print report, so the narrative blocks travel with the assessment rather than creating a separate calculation path.
+10. **What is deliberately not added:** no portfolio score, trading terminal charts, buy/sell recommendations, excessive metrics, or extra customer-facing tabs. The visual goal is more meaning per unit of information, not more information.
 
 ## 10. Existing capabilities that must remain intact
 
@@ -398,6 +420,10 @@ Do not build a WhatsApp chatbot as part of the first implementation.
 > **Periodic market data must not silently be presented as real-time data.**
 
 
+## 9A. Visual design principles
+
+The Web assessment follows a quiet-financial-intelligence visual language. The customer narrative is **Clarity → Attention → Capital** and the screen-level progression is **see the shape of capital → understand what deserves attention → know where to research next**. The reusable storytelling contract is **Finding → Meaning → Evidence → Question → Context**. Visuals should reduce interpretation effort, not increase dashboard density.
+
 ## 9B. Holistic Web cohesion pass — 2026-09-11
 
 The current Web baseline includes a deliberate semantic/data/visual cohesion pass. The objective is not to add features; it is to make the same Quantvesting story appear consistently across data, Web, mobile, print/PDF, Journal and documentation.
@@ -458,11 +484,15 @@ The Web UI surfaces coverage so N/A values are explainable rather than looking l
 
 Review Areas now distinguish **active review situations** from **Legacy classification**. The attention queue is based on active situations rather than simply counting every Legacy holding.
 
-Near FTT uses one clear metric:
+Near FTT uses one clear metric and a configured cutoff:
 
-> Remaining FTT upside
+> Remaining FTT upside ≤ the configured near-FTT maximum (currently 10%)
 
-Quality / Rank Review uses rank and quality evidence. Neither group uses a generic bar whose width means something different from the label. Review questions appear once at group level; cards provide evidence.
+Near FTT is Core-only; Legacy holdings are not promoted into this queue by FTT proximity alone.
+
+**Conviction / Rank Review** uses the framework's existing `Conviction` taxonomy and `CumlRnk`: a Core holding is surfaced when its Conviction level is one of the configured review levels (currently `M` or `L`) or its cumulative rank is above the configured threshold (currently `100`). Conviction already encodes quality and market-cap bucket, for example `X-LC`, `H-MC` and `L-SC`; no separate Business Quality methodology is introduced.
+
+Neither group uses a generic bar whose width means something different from the label. Review questions appear once at group level; cards provide evidence.
 
 The full evidence area initially emphasizes active review evidence. Legacy holdings remain available as framework context through progressive disclosure.
 
@@ -476,7 +506,7 @@ Opportunity tables use **Framework Target** terminology and show whether a candi
 
 ### Print/PDF
 
-The primary customer print flow includes My Portfolio, Review Areas and Opportunity Universe. It excludes How to Read, controls/guidance, the CTA and My Journey. The legacy Worker PDF endpoint remains a compatibility/fallback delivery surface and now uses the same Framework Target terminology and coverage language.
+The primary customer print flow includes My Portfolio, Review Areas and Opportunity Universe, followed by the end-of-report assessment CTA, community CTA and disclosure. It excludes How to Read, controls/guidance and My Journey. The legacy Worker PDF endpoint remains a compatibility/fallback delivery surface and now uses the same Framework Target terminology and coverage language.
 
 ### Journal reliability
 
@@ -504,3 +534,69 @@ A post-deployment smoke test checks the Worker root, Journal index, RSS, sitemap
 - Generated Journal/link/sitemap cohesion checks.
 
 Do not add another customer-facing metric, visual encoding or action label without first defining its meaning, source, valid conditions, customer label and visual treatment.
+
+### 9D. Holistic storytelling + capital-rotation reference set — 2026-09-12
+
+This pass extends the 2026-09-11 visual storytelling work without changing the analytical methodology.
+
+#### Storytelling contract
+
+The assessment should feel like a guided portfolio investigation rather than a printed dashboard:
+
+```text
+See the shape of your capital
+        ↓
+Understand what deserves attention
+        ↓
+Know where to research next
+```
+
+The reusable customer-facing grammar is:
+
+```text
+Finding → Meaning → Evidence → Question → Context
+```
+
+The **Start Here** cards now make that grammar explicit by showing the surfaced finding, a concise interpretation, capital at stake and the question worth investigating. Review Areas continues into supporting evidence, and Opportunity Universe becomes the research-shortlist destination rather than a disconnected stock table.
+
+#### Capital Rotation Review
+
+The prior presentation repeated one reference opportunity for every rotation candidate. That was removed.
+
+When `N` rotation candidates are surfaced, the Web engine now creates a reference opportunity set from the highest-ranked qualifying opportunities, up to `N` entries. The UI presents those opportunities once and asks a shared research question:
+
+> **Is any of these alternatives a better use of the capital currently under review?**
+
+There is deliberately **no forced one-to-one mapping** between a holding and an opportunity. The framework currently has no explicit matching rule that would justify claiming `Holding A → Opportunity A`. The first-reference fields remain in the engine for backward compatibility, while `alternative_opportunities` carries the reference set used by the customer-facing Web presentation.
+
+The compatibility Worker PDF follows the same structure: reference opportunities first, shared research question second, then the surfaced rotation candidates. This keeps Web and PDF aligned.
+
+#### Presentation refinement
+
+The assessment section questions now use clearer human framing:
+
+- Review Areas → **What deserves attention first?**
+- Capital Rotation Review → **Where might currently deployed capital deserve comparison?**
+- Opportunity Universe → **Where could capital work harder?**
+
+These are presentation-only changes. Portfolio calculations, FTT semantics, ranking, review thresholds, opportunity filters, market snapshots, disclosures and customer-facing action labels remain unchanged.
+
+#### Product operating priority
+
+The current product is intentionally moving into a validation/distribution phase rather than another feature-expansion phase. The next high-ROI work is to get real users through the existing assessment, observe where the strongest aha moments occur, gather direct feedback, and only then make small evidence-backed product changes. The product's success criterion is not dashboard richness; it is whether users understand their capital better, know what deserves attention, know where to research next, and would return or pay for that clarity.
+
+### 9E. Capital rotation uses unheld reference opportunities — 2026-09-12
+
+Capital Rotation Review is now explicitly an **opportunity-cost lens** on currently deployed capital. Its reference opportunity set excludes securities already held in the user's portfolio.
+
+When `N` rotation candidates are surfaced:
+
+1. The Python and Web engines identify qualifying opportunities above the configured minimum alternative-upside threshold.
+2. Already-held securities are excluded from the reference set.
+3. Up to `N` of the remaining highest-ranked opportunities are retained.
+4. The UI/PDF presents that unheld reference set once and asks the shared research question: “Is any of these alternatives a better use of the capital currently under review?”
+5. There is still no forced one-to-one mapping between a rotation candidate and an opportunity.
+
+This keeps the three-step product story coherent: **identify attention → frame opportunity cost → point to unheld research opportunities**. If fewer than `N` qualifying unheld opportunities exist, the set is smaller rather than padded with existing holdings.
+
+The full Opportunity Universe continues to show both held and unheld securities; this refinement applies specifically to the Capital Rotation Review reference set.
