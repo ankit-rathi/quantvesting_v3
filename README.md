@@ -64,7 +64,7 @@ After a Web assessment completes, the user can download a PDF copy of the assess
 
 The guest flow therefore does not expose a persistent bearer-style report URL. Assessment/job data needed for processing and the active registered-user workflow remains stored according to the existing repository model.
 
-The print/PDF report includes My Portfolio, Review Areas and Opportunity Universe content plus the disclosure. How to Read, controls/guidance, the post-assessment CTA and My Journey are excluded from the customer-facing print report.
+The print/PDF report includes My Portfolio, Review Areas and Opportunity Universe content plus the disclosure. How to Read, controls/guidance and My Journey are excluded from the customer-facing print report; the end-of-report assessment CTA, community CTA and disclosure are included.
 
 ## WhatsApp roadmap
 
@@ -91,3 +91,41 @@ npm run test:all
 ```
 
 Do not claim a change is complete until the relevant regression tests pass.
+
+## Latest presentation contract — 2026-09-12
+
+The assessment is intentionally being treated as a **financial story, not a dashboard**. The user journey is:
+
+```text
+See the shape of your capital
+        ↓
+Understand what deserves attention
+        ↓
+Know where to research next
+```
+
+Important presentation grammar:
+
+```text
+Finding → Meaning → Evidence → Question → Context
+```
+
+The opening **Start Here** cards now surface the finding, the meaning/reason for attention, capital at stake and the question worth investigating. Review Areas and the Opportunity Universe continue the same narrative rather than introducing unrelated metrics.
+
+### Capital Rotation reference set
+
+Capital Rotation Review does **not** force a one-to-one mapping between a mature holding and a single alternative. When `N` rotation candidates are surfaced, the Web assessment presents up to `N` highest-ranked qualifying research opportunities as a **reference opportunity set**. Each rotation candidate is then compared conceptually with that set.
+
+This avoids artificial precision such as `Holding A → Opportunity A` when the framework has no explicit matching rule. The section asks whether any of the reference opportunities may represent a better research case for the capital currently under review; it does not issue a sell/buy instruction.
+
+The same reference-set concept is carried into the compatibility Worker PDF and the Python decision helper while preserving the existing first-reference fields for backward compatibility.
+
+### Current product priority
+
+The product/assessment logic is deliberately being kept stable while the next operating phase focuses on **distribution, real-user feedback, aha-moment discovery and willingness-to-pay evidence**. Presentation improvements should make the existing analytical output easier to understand; they should not add dashboard density without evidence that it improves customer value.
+
+### Latest capital-rotation reference refinement — 2026-09-12
+
+Capital Rotation Review now uses **unheld** qualifying opportunities as its reference set. When `N` rotation candidates are surfaced, the Web/PDF presentation shows up to `N` highest-ranked qualifying opportunities that the user does not currently hold. This keeps the section focused on opportunity cost: the question is whether currently deployed capital deserves comparison with a stronger unheld research opportunity.
+
+The existing adaptive `N`-sized reference set and no-forced-one-to-one mapping remain unchanged. If fewer than `N` qualifying unheld opportunities exist, the reference set is smaller rather than being padded with already-held securities.
